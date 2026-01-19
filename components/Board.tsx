@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -10,557 +10,459 @@ import {
   useSensor,
   useSensors,
   closestCorners,
+  useDroppable,
 } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
-import TaskColumn from "./TaskColumn";
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import TaskCard from "./TaskCard";
-import TaskEditor from "./TaskEditor";
 import { Task, TaskStatus } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { fetchWithRetry } from "@/lib/utils";
 import { signOut } from "next-auth/react";
-import { toast } from "sonner";
 import {
-  Squares2X2Icon,
-  ListBulletIcon,
   MagnifyingGlassIcon,
-  TagIcon,
-  XMarkIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 
-const STATUSES: { value: TaskStatus; label: string; color: string }[] = [
-  { value: "not_started", label: "Not Started", color: "bg-brutal-pink" },
-  { value: "in_progress", label: "In Progress", color: "bg-brutal-blue" },
-  { value: "complete", label: "Complete", color: "bg-brutal-green" },
+const STATUSES: { value: TaskStatus; label: string }[] = [
+  { value: "not_started", label: "To Do" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "complete", label: "Done" },
 ];
+
+// Clean theme colors
+const WHITE = "#ffffff";
+const GRAY_50 = "#f9fafb";
+const GRAY_100 = "#f3f4f6";
+const GRAY_200 = "#e5e7eb";
+const GRAY_300 = "#d1d5db";
+const GRAY_400 = "#9ca3af";
+const GRAY_500 = "#6b7280";
+const GRAY_600 = "#4b5563";
+const GRAY_700 = "#374151";
+const GRAY_800 = "#1f2937";
+const GRAY_900 = "#111827";
+const BLUE_500 = "#3b82f6";
+const BLUE_50 = "#eff6ff";
+const BLUE_100 = "#dbeafe";
+const GREEN_500 = "#22c55e";
+const GREEN_50 = "#f0fdf4";
+const RED_500 = "#ef4444";
+const RED_50 = "#fef2f2";
+
+const styles = {
+  page: { minHeight: '100vh', backgroundColor: WHITE, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' },
+  header: { position: 'sticky' as const, top: 0, zIndex: 40, backgroundColor: WHITE, borderBottom: `1px solid ${GRAY_200}`, padding: '16px 24px' },
+  headerContent: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' },
+  title: { fontSize: '20px', fontWeight: 600, color: GRAY_900, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' },
+  searchBox: { position: 'relative' as const, display: 'flex', alignItems: 'center' },
+  searchInput: { width: '240px', paddingLeft: '36px', paddingRight: '12px', padding: '8px 12px 8px 36px', backgroundColor: WHITE, border: `1px solid ${GRAY_200}`, borderRadius: '8px', fontSize: '14px', color: GRAY_700, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' },
+  searchIcon: { position: 'absolute', left: '12px', color: GRAY_400, width: '16px', height: '16px', pointerEvents: 'none' },
+  button: { padding: '8px 14px', backgroundColor: WHITE, border: `1px solid ${GRAY_200}`, color: GRAY_700, fontSize: '14px', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', borderRadius: '8px' },
+  buttonHover: { backgroundColor: GRAY_50, borderColor: GRAY_300 },
+  main: { padding: '24px', maxWidth: '1400px', margin: '0 auto' },
+  boardGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' },
+  column: { backgroundColor: GRAY_50, border: `1px solid ${GRAY_200}`, borderRadius: '12px', display: 'flex', flexDirection: 'column' as const, minHeight: '400px' },
+  columnHeader: { padding: '16px', borderBottom: `1px solid ${GRAY_200}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  columnTitle: { fontSize: '15px', fontWeight: 600, color: GRAY_700, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' },
+  taskCount: { fontSize: '13px', padding: '2px 8px', backgroundColor: GRAY_200, color: GRAY_600, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 500, borderRadius: '12px' },
+  columnContent: { padding: '12px', display: 'flex', flexDirection: 'column' as const, gap: '8px' },
+  addTaskInline: { padding: '12px', border: `1px solid ${GRAY_200}`, borderRadius: '8px', backgroundColor: WHITE },
+  loading: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: WHITE, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' },
+};
 
 export default function Board() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Array<{ id: number; name: string; color: string; taskCount: number }>>([]);
-  const [view, setView] = useState<"board" | "list">("board");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterTag, setFilterTag] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [isAddingTask, setIsAddingTask] = useState(false);
-  const [addingTaskStatus, setAddingTaskStatus] = useState<TaskStatus>("not_started");
+  const [addingToColumn, setAddingToColumn] = useState<TaskStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [listGrouping, setListGrouping] = useState<"none" | "status" | "tags">("none");
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  // Fetch data
   const fetchTasks = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
-      if (filterTag) params.append("tagId", filterTag.toString());
-
-      const response = await fetch(`/api/tasks?${params}`);
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data);
-      }
-    } catch (error) {
-      toast.error("Failed to load tasks");
+      const response = await fetchWithRetry("/api/tasks");
+      if (response.ok) setTasks(await response.json());
     } finally {
       setIsLoading(false);
     }
-  }, [filterTag]);
+  }, []);
 
   const fetchTags = async () => {
     try {
-      const response = await fetch("/api/tags");
-      if (response.ok) {
-        const data = await response.json();
-        setTags(data);
-      }
-    } catch (error) {
-      console.error("Failed to load tags");
-    }
+      const response = await fetchWithRetry("/api/tags");
+      if (response.ok) setTags(await response.json());
+    } catch {}
   };
 
-  useEffect(() => {
-    fetchTasks();
-    fetchTags();
-  }, [filterTag]);
+  useEffect(() => { fetchTasks(); fetchTags(); }, [fetchTasks]);
 
-  // Filter tasks by search
-  const filteredTasks = tasks.filter((task) =>
-    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredTasks = tasks.filter(t =>
+    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  // Group tasks by status for board view
   const tasksByStatus: Record<TaskStatus, Task[]> = {
-    not_started: filteredTasks.filter((t) => t.status === "not_started"),
-    in_progress: filteredTasks.filter((t) => t.status === "in_progress"),
-    complete: filteredTasks.filter((t) => t.status === "complete"),
+    not_started: filteredTasks.filter(t => t.status === "not_started"),
+    in_progress: filteredTasks.filter(t => t.status === "in_progress"),
+    complete: filteredTasks.filter(t => t.status === "complete"),
   };
 
-  // Group tasks for list view
-  const getGroupedTasks = () => {
-    if (listGrouping === "status") {
-      return STATUSES.map((status) => ({
-        key: status.value,
-        label: status.label,
-        tasks: filteredTasks.filter((t) => t.status === status.value),
-      }));
-    } else if (listGrouping === "tags") {
-      const tagGroups = tags.map((tag) => ({
-        key: tag.id.toString(),
-        label: tag.name,
-        color: tag.color,
-        tasks: filteredTasks.filter((t) => t.tags.some((tg) => tg.id === tag.id)),
-      }));
-      const untagged = {
-        key: "untagged",
-        label: "No Tags",
-        tasks: filteredTasks.filter((t) => t.tags.length === 0),
-      };
-      return [...tagGroups, untagged].filter((g) => g.tasks.length > 0);
-    }
-    return [{ key: "all", label: "All Tasks", tasks: filteredTasks }];
-  };
-
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    setActiveId(parseInt(active.id as string));
-  };
-
+  const handleDragStart = (event: DragStartEvent) => setActiveId(parseInt(event.active.id as string));
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
     setActiveId(null);
-
+    const { active, over } = event;
     if (!over) return;
 
     const activeId = parseInt(active.id as string);
-    const overId = parseInt(over.id as string);
-
-    // Find the active task
-    const activeTask = tasks.find((t) => t.id === activeId);
+    const activeTask = tasks.find(t => t.id === activeId);
     if (!activeTask) return;
 
-    // Find over task or column
-    const overTask = tasks.find((t) => t.id === overId);
     const overStatus = over?.data?.current?.status as TaskStatus | undefined;
+    const newStatus = overStatus || activeTask.status;
 
-    let newStatus = activeTask.status;
-    let newTasks = [...tasks];
-    let activeIndex = newTasks.findIndex((t) => t.id === activeId);
+    const updatedTasks = tasks.map(t => t.id === activeId ? { ...t, status: newStatus } : t);
+    setTasks(updatedTasks);
 
-    if (overTask) {
-      // Dropping on another task
-      newStatus = overTask.status;
-      const overIndex = newTasks.findIndex((t) => t.id === overId);
-
-      if (activeTask.status === newStatus) {
-        // Same column - reorder
-        newTasks = arrayMove(newTasks, activeIndex, overIndex);
-      } else {
-        // Different column - change status and move to position
-        newTasks[activeIndex] = { ...activeTask, status: newStatus };
-        newTasks.splice(overIndex, 0, newTasks.splice(activeIndex, 1)[0]);
-      }
-    } else if (overStatus) {
-      // Dropping on a column
-      newStatus = overStatus;
-      newTasks[activeIndex] = { ...activeTask, status: newStatus };
-    }
-
-    // Recalculate orders within each status
-    const updates: Array<{ id: number; status: TaskStatus; order: number }> = [];
-    STATUSES.forEach(({ value: status }) => {
-      newTasks
-        .filter((t) => t.status === status)
-        .forEach((task, index) => {
-          updates.push({ id: task.id, status, order: index });
-        });
-    });
-
-    // Optimistic update
-    setTasks(newTasks);
-
-    // Persist to server
     try {
-      const response = await fetch("/api/tasks/reorder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ updates }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to reorder");
-      }
-    } catch (error) {
-      toast.error("Failed to reorder tasks");
-      fetchTasks(); // Revert
-    }
-  };
-
-  const handleCreateTask = async (data: { title: string; description: string; status: TaskStatus; tags: string[] }) => {
-    try {
-      const response = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create task");
-      }
-
-      const newTask = await response.json();
-      setTasks((prev) => [...prev, newTask]);
-      setIsAddingTask(false);
-      toast.success("Task created");
-    } catch (error) {
-      toast.error("Failed to create task");
-    }
-  };
-
-  const handleUpdateTask = async (id: number, data: Partial<Task> | { title: string; description: string; status: TaskStatus; tags: string[] }) => {
-    try {
-      const response = await fetch(`/api/tasks/${id}`, {
+      await fetchWithRetry(`/api/tasks/${activeId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...activeTask, status: newStatus, title: activeTask.title, description: activeTask.description || "", tags: activeTask.tags.map(t => t.name) }),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to update task");
-      }
-
-      const updatedTask = await response.json();
-      setTasks((prev) => prev.map((t) => (t.id === id ? updatedTask : t)));
-      setEditingTask(null);
-      toast.success("Task updated");
-    } catch (error) {
-      toast.error("Failed to update task");
+    } catch {
+      fetchTasks();
     }
   };
 
-  const handleDeleteTask = async (id: number) => {
+  const handleCreateTask = async (status: TaskStatus, data: { title: string; description: string; tags: string[] }) => {
     try {
-      const response = await fetch(`/api/tasks/${id}`, {
-        method: "DELETE",
+      const response = await fetchWithRetry("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, status }),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete task");
-      }
-
-      setTasks((prev) => prev.filter((t) => t.id !== id));
-      setEditingTask(null);
-      toast.success("Task deleted");
-    } catch (error) {
-      toast.error("Failed to delete task");
+      if (!response.ok) throw new Error("Failed to create");
+      const newTask = await response.json();
+      setTasks(prev => [...prev, newTask]);
+      setAddingToColumn(null);
+    } catch {
+      // Silent error handling
     }
   };
 
-  const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
+  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl font-bold">Loading...</div>
+      <div style={styles.loading}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '20px', height: '20px', border: '2px solid #e5e7eb', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+          <span style={{ color: GRAY_500, fontSize: '14px' }}>Loading...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-brutal-white">
-      {/* Header */}
-      <header className="border-brutal border-b-3 border-black bg-white sticky top-0 z-10">
-        <div className="max-w-[1800px] mx-auto px-4 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <h1 className="text-3xl font-bold tracking-tight">My Trello</h1>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* Search */}
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search tasks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 border-3 border-black focus:outline-none focus:ring-2 focus:ring-brutal-blue text-sm min-w-[200px]"
-                />
-              </div>
-
-              {/* Tag Filter */}
-              {filterTag ? (
-                <button
-                  onClick={() => setFilterTag(null)}
-                  className="flex items-center gap-2 px-3 py-2 border-3 border-black bg-brutal-pink text-white font-semibold text-sm hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-brutal-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all shadow-brutal-sm"
-                >
-                  <TagIcon className="w-4 h-4" />
-                  <span>Clear Filter</span>
-                  <XMarkIcon className="w-4 h-4" />
-                </button>
-              ) : (
-                <div className="relative group">
-                  <button className="flex items-center gap-2 px-3 py-2 border-3 border-black bg-white shadow-brutal-sm font-semibold text-sm hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all">
-                    <TagIcon className="w-4 h-4" />
-                    <span>Filter</span>
-                  </button>
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white border-3 border-black shadow-brutal hidden group-hover:block z-20">
-                    <div className="p-2">
-                      <div className="text-xs font-bold mb-2 text-gray-500">FILTER BY TAG</div>
-                      {tags.map((tag) => (
-                        <button
-                          key={tag.id}
-                          onClick={() => setFilterTag(tag.id)}
-                          className="w-full text-left px-2 py-1 hover:bg-gray-100 flex items-center gap-2"
-                        >
-                          <span
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: tag.color }}
-                          />
-                          <span className="text-sm">{tag.name}</span>
-                          <span className="text-xs text-gray-400 ml-auto">{tag.taskCount}</span>
-                        </button>
-                      ))}
-                      {tags.length === 0 && (
-                        <div className="text-sm text-gray-500">No tags yet</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* View Toggle */}
-              <div className="flex border-3 border-black">
-                <button
-                  onClick={() => setView("board")}
-                  className={cn(
-                    "p-2 font-semibold text-sm",
-                    view === "board" ? "bg-brutal-yellow" : "bg-white hover:bg-gray-100"
-                  )}
-                >
-                  <Squares2X2Icon className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setView("list")}
-                  className={cn(
-                    "p-2 font-semibold text-sm border-l-3 border-black",
-                    view === "list" ? "bg-brutal-yellow" : "bg-white hover:bg-gray-100"
-                  )}
-                >
-                  <ListBulletIcon className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Sign Out */}
-              <button
-                onClick={() => signOut({ callbackUrl: "/auth/signin" })}
-                className="flex items-center gap-2 px-4 py-2 border-3 border-black bg-brutal-orange text-white font-semibold text-sm hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-brutal-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all shadow-brutal-sm"
-              >
-                <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                <span>Sign Out</span>
-              </button>
+    <div style={styles.page}>
+      <header style={styles.header}>
+        <div style={styles.headerContent}>
+          <h1 style={styles.title}>TicTac</h1>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div style={styles.searchBox}>
+              <MagnifyingGlassIcon style={styles.searchIcon} />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={styles.searchInput}
+              />
             </div>
+            <button
+              onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+              style={styles.button}
+              onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.buttonHover)}
+              onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: WHITE, borderColor: GRAY_200 })}
+            >
+              <ArrowRightOnRectangleIcon style={{ width: '16px', height: '16px' }} />
+              Sign out
+            </button>
           </div>
         </div>
       </header>
 
-      {/* List View Grouping Options */}
-      {view === "list" && (
-        <div className="max-w-[1800px] mx-auto px-4 py-3 bg-white border-b-3 border-black">
-          <div className="flex items-center gap-4">
-            <span className="font-semibold text-sm">Group by:</span>
-            <div className="flex border-3 border-black">
-              {(["none", "status", "tags"] as const).map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setListGrouping(option)}
-                  className={cn(
-                    "px-3 py-1 text-sm font-semibold capitalize",
-                    listGrouping === option ? "bg-brutal-blue text-white" : "bg-white hover:bg-gray-100",
-                    option !== "none" && "border-l-3 border-black"
-                  )}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+      <main style={styles.main}>
+        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div style={styles.boardGrid}>
+            {STATUSES.map((status) => (
+              <Column
+                key={status.value}
+                status={status.value}
+                label={status.label}
+                tasks={tasksByStatus[status.value]}
+                availableTags={tags}
+                isAdding={addingToColumn === status.value}
+                onAddStart={() => setAddingToColumn(status.value)}
+                onAddCancel={() => setAddingToColumn(null)}
+                onCreateTask={(data) => handleCreateTask(status.value, data)}
+              />
+            ))}
           </div>
-        </div>
-      )}
 
-      {/* Main Content */}
-      <main className="max-w-[1800px] mx-auto p-4">
-        {view === "board" ? (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {STATUSES.map((status) => (
-                <TaskColumn
-                  key={status.value}
-                  status={status.value}
-                  label={status.label}
-                  color={status.color}
-                  tasks={tasksByStatus[status.value]}
-                  onAddTask={() => {
-                    setAddingTaskStatus(status.value);
-                    setIsAddingTask(true);
-                  }}
-                  onEditTask={setEditingTask}
-                />
-              ))}
-            </div>
-
-            <DragOverlay>
-              {activeTask ? (
-                <div className="w-72 opacity-90 rotate-3">
-                  <TaskCard task={activeTask} onEdit={() => {}} />
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        ) : (
-          <ListView
-            groups={getGroupedTasks()}
-            onEditTask={setEditingTask}
-            onAddTask={() => {
-              setAddingTaskStatus("not_started");
-              setIsAddingTask(true);
-            }}
-          />
-        )}
+          <DragOverlay>
+            {activeTask && (
+              <div style={{ opacity: 0.8, transform: 'rotate(1deg)', width: '284px' }}>
+                <TaskCard task={activeTask} availableTags={tags} onUpdate={() => {}} onDelete={() => {}} />
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
       </main>
 
-      {/* Task Editor Modal */}
-      {(editingTask || isAddingTask) && (
-        <TaskEditor
-          task={editingTask}
-          defaultStatus={addingTaskStatus}
-          tags={tags}
-          onSave={(data) => {
-            if (editingTask) {
-              handleUpdateTask(editingTask.id, data);
-            } else {
-              handleCreateTask({ ...data, status: addingTaskStatus });
-            }
-          }}
-          onDelete={editingTask ? () => handleDeleteTask(editingTask.id) : undefined}
-          onClose={() => {
-            setEditingTask(null);
-            setIsAddingTask(false);
-          }}
-        />
-      )}
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
 
-// ListView Component
-function ListView({
-  groups,
-  onEditTask,
-  onAddTask,
+// Column Component with Clean Inline Task Creation
+function Column({
+  status,
+  label,
+  tasks,
+  availableTags,
+  isAdding,
+  onAddStart,
+  onAddCancel,
+  onCreateTask,
 }: {
-  groups: Array<{
-    key: string;
-    label: string;
-    color?: string;
-    tasks: Task[];
-  }>;
-  onEditTask: (task: Task) => void;
-  onAddTask: () => void;
+  status: TaskStatus;
+  label: string;
+  tasks: Task[];
+  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+  isAdding: boolean;
+  onAddStart: () => void;
+  onAddCancel: () => void;
+  onCreateTask: (data: { title: string; description: string; tags: string[] }) => void;
 }) {
+  const { setNodeRef } = useDroppable({ id: status, data: { status } });
+  const taskIds = tasks.map(t => t.id.toString());
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">All Tasks</h2>
-        <button
-          onClick={onAddTask}
-          className="px-6 py-3 bg-brutal-green border-brutal border-black shadow-brutal text-white font-bold hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-brutal-sm active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
-        >
-          + Add Task
-        </button>
+    <div ref={setNodeRef} style={styles.column}>
+      <div style={styles.columnHeader}>
+        <span style={styles.columnTitle}>{label}</span>
+        <span style={styles.taskCount}>{tasks.length}</span>
       </div>
 
-      {groups.map((group) => (
-        <div key={group.key} className="bg-white border-3 border-black shadow-brutal">
-          <div className="px-4 py-3 border-b-3 border-black bg-gray-50 flex items-center gap-3">
-            {group.color && (
-              <span
-                className="w-4 h-4 rounded-full"
-                style={{ backgroundColor: group.color }}
-              />
-            )}
-            <h3 className="font-bold">{group.label}</h3>
-            <span className="text-sm text-gray-500">({group.tasks.length})</span>
-          </div>
-          <div className="divide-y-3 divide-black">
-            {group.tasks.map((task) => (
-              <div
-                key={task.id}
-                onClick={() => onEditTask(task)}
-                className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-lg truncate">{task.title}</h4>
-                    {task.description && (
-                      <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-                        {task.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-3 mt-2">
-                      <StatusBadge status={task.status} />
-                      <span className="text-xs text-gray-400">
-                        {new Date(task.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex gap-1 flex-wrap justify-end">
-                    {task.tags.map((tag) => (
-                      <span
-                        key={tag.id}
-                        className="px-2 py-1 text-xs font-semibold rounded-full text-white"
-                        style={{ backgroundColor: tag.color }}
-                      >
-                        {tag.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {group.tasks.length === 0 && (
-              <div className="p-8 text-center text-gray-400">No tasks</div>
-            )}
-          </div>
-        </div>
-      ))}
+      <div style={styles.columnContent}>
+        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+          {tasks.map(task => (
+            <SortableTaskCard
+              key={task.id}
+              task={task}
+              availableTags={availableTags}
+              onUpdate={async (id, data) => {
+                await fetch(`/api/tasks/${id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(data),
+                });
+              }}
+              onDelete={async (id) => {
+                await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+                window.location.reload();
+              }}
+            />
+          ))}
+        </SortableContext>
+
+        {isAdding ? (
+          <InlineTaskCreate availableTags={availableTags} onSave={onCreateTask} onCancel={onAddCancel} />
+        ) : (
+          <button
+            onClick={onAddStart}
+            style={{
+              width: '100%',
+              padding: '10px',
+              border: `1px dashed ${GRAY_300}`,
+              backgroundColor: 'transparent',
+              color: GRAY_400,
+              fontSize: '13px',
+              cursor: 'pointer',
+              fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+              borderRadius: '8px',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => Object.assign(e.currentTarget.style, { borderColor: GRAY_400, color: GRAY_600, backgroundColor: GRAY_50 })}
+            onMouseLeave={(e) => Object.assign(e.currentTarget.style, { borderColor: GRAY_300, color: GRAY_400, backgroundColor: 'transparent' })}
+          >
+            + New task
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: TaskStatus }) {
-  const config = {
-    not_started: { label: "Not Started", color: "bg-brutal-pink" },
-    in_progress: { label: "In Progress", color: "bg-brutal-blue" },
-    complete: { label: "Complete", color: "bg-brutal-green" },
+// Clean Inline Task Creation
+function InlineTaskCreate({
+  availableTags,
+  onSave,
+  onCancel,
+}: {
+  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+  onSave: (data: { title: string; description: string; tags: string[] }) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleSubmit = () => {
+    if (!title.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    onSave({ title: title.trim(), description: description.trim(), tags: [] });
   };
 
-  const { label, color } = config[status];
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    } else if (e.key === 'Escape') {
+      onCancel();
+    }
+  };
 
   return (
-    <span className={`${color} px-2 py-1 text-xs font-semibold text-white rounded-full`}>
-      {label}
-    </span>
+    <div style={styles.addTaskInline}>
+      <input
+        ref={inputRef}
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Task title"
+        style={{
+          width: '100%',
+          padding: '8px 10px',
+          backgroundColor: 'transparent',
+          border: 'none',
+          borderBottom: `1px solid ${GRAY_200}`,
+          fontSize: '14px',
+          color: GRAY_900,
+          fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+          outline: 'none',
+          marginBottom: '8px',
+        }}
+        onKeyDown={handleKeyDown}
+      />
+      <input
+        type="text"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Add a description..."
+        style={{
+          width: '100%',
+          padding: '8px 0',
+          backgroundColor: 'transparent',
+          border: 'none',
+          borderBottom: `1px solid ${GRAY_200}`,
+          fontSize: '13px',
+          color: GRAY_600,
+          fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+          outline: 'none',
+          marginBottom: '12px',
+        }}
+        onKeyDown={handleKeyDown}
+      />
+      <div style={{ display: 'flex', gap: '6px' }}>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: '6px 12px',
+            backgroundColor: 'transparent',
+            color: GRAY_500,
+            border: 'none',
+            fontSize: '13px',
+            cursor: 'pointer',
+            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+            borderRadius: '6px',
+          }}
+          onMouseEnter={(e) => Object.assign(e.currentTarget.style, { color: GRAY_700, backgroundColor: GRAY_100 })}
+          onMouseLeave={(e) => Object.assign(e.currentTarget.style, { color: GRAY_500, backgroundColor: 'transparent' })}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!title.trim() || isSubmitting}
+          style={{
+            padding: '6px 12px',
+            backgroundColor: BLUE_500,
+            color: WHITE,
+            border: 'none',
+            fontSize: '13px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+            borderRadius: '6px',
+            opacity: (!title.trim() || isSubmitting) ? 0.5 : 1,
+          }}
+          onMouseEnter={(e) => (title.trim() && !isSubmitting) && Object.assign(e.currentTarget.style, { backgroundColor: '#2563eb' })}
+          onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: BLUE_500 })}
+        >
+          {isSubmitting ? "Adding..." : "Add"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Sortable Task Card Wrapper
+function SortableTaskCard({
+  task,
+  availableTags,
+  onUpdate,
+  onDelete,
+}: {
+  task: Task;
+  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+  onUpdate: (id: number, data: { title: string; description: string; status: TaskStatus; tags: string[] }) => void;
+  onDelete: (id: number) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id.toString(), data: { status: task.status } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <TaskCard task={task} availableTags={availableTags} onUpdate={onUpdate} onDelete={onDelete} dragAttributes={attributes} dragListeners={listeners} />
+    </div>
   );
 }

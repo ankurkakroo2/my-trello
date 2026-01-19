@@ -4,7 +4,6 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { toast } from "sonner";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -24,29 +23,61 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        toast.error("Invalid email or password");
+        // Silent error - show inline error
       } else {
-        toast.success("Signed in successfully");
         router.push("/");
         router.refresh();
       }
-    } catch (error) {
-      toast.error("Something went wrong");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-brutal-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white border-brutal border-brutal-black shadow-brutal p-8 mb-6">
-          <h1 className="text-4xl font-bold mb-2 text-brutal-black">My Trello</h1>
-          <p className="text-lg text-gray-600 mb-8">Sign in to manage your tasks</p>
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#ffffff',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '16px',
+      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+    }}>
+      <div style={{ width: '100%', maxWidth: '400px' }}>
+        <div style={{
+          backgroundColor: '#ffffff',
+          padding: '40px 0',
+          textAlign: 'center'
+        }}>
+          <h1 style={{
+            fontSize: '28px',
+            fontWeight: 600,
+            color: '#111827',
+            marginBottom: '8px',
+            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+          }}>
+            TicTac
+          </h1>
+          <p style={{
+            fontSize: '15px',
+            color: '#6b7280',
+            marginBottom: '40px',
+            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+          }}>
+            Sign in to manage your tasks
+          </p>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
-              <label htmlFor="email" className="block text-sm font-bold mb-2">
+              <label htmlFor="email" style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: 500,
+                marginBottom: '6px',
+                color: '#374151',
+                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                textAlign: 'left',
+              }}>
                 Email
               </label>
               <input
@@ -54,14 +85,32 @@ export default function SignInPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border-3 border-black text-lg focus:outline-none focus:ring-2 focus:ring-brutal-blue"
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  color: '#111827',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                  outline: 'none',
+                }}
                 placeholder="you@example.com"
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-bold mb-2">
+              <label htmlFor="password" style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: 500,
+                marginBottom: '6px',
+                color: '#374151',
+                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                textAlign: 'left',
+              }}>
                 Password
               </label>
               <input
@@ -69,8 +118,18 @@ export default function SignInPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border-3 border-black text-lg focus:outline-none focus:ring-2 focus:ring-brutal-blue"
-                placeholder="••••••••"
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  color: '#111827',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                  outline: 'none',
+                }}
+                placeholder="•••••••••"
                 required
                 minLength={6}
               />
@@ -79,19 +138,49 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-brutal-yellow border-brutal border-black shadow-brutal text-black font-bold text-lg py-3 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-brutal-sm active:translate-x-[4px] active:translate-y-[4px] active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              style={{
+                width: '100%',
+                padding: '10px',
+                backgroundColor: '#111827',
+                color: '#ffffff',
+                fontWeight: 500,
+                fontSize: '15px',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                opacity: isLoading ? 0.5 : 1,
+                transition: 'all 0.15s',
+                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.backgroundColor = '#374151';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#111827';
+              }}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </form>
         </div>
 
-        <div className="text-center">
-          <p className="text-gray-600">
-            Don&apos;t have an account?{" "}
+        <div style={{ textAlign: 'center' }}>
+          <p style={{
+            color: '#6b7280',
+            fontSize: '14px',
+            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+          }}>
+            Don't have an account?{" "}
             <Link
               href="/auth/signup"
-              className="font-bold text-brutal-blue underline hover:text-brutal-pink"
+              style={{
+                fontWeight: 500,
+                color: '#3b82f6',
+                textDecoration: 'none',
+                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+              }}
             >
               Sign up
             </Link>

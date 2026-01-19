@@ -39,3 +39,17 @@ next-env.d.ts
 *.db-shm
 *.db-wal
 /data/
+
+# test artifacts
+/test-results/
+/playwright-report/
+*.png
+check-*.js
+test-*.js
+verify-*.js
+diagnose-*.js
+screenshot*.js
+absolute-*.js
+comprehensive-*.js
+deep-*.js
+final-*.js
