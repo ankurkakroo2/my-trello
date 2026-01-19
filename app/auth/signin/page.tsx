@@ -204,19 +204,19 @@ export default function SignInPage() {
             </div>
 
             <h1 style={{
-              fontSize: '104px',
+              fontSize: '120px',
               fontWeight: 900,
-              background: `linear-gradient(90deg, ${C.black} 0%, ${C.indigo} 20%, ${C.violet} 40%, ${C.purple} 60%, ${C.pink} 80%, ${C.rose} 100%)`,
-              backgroundSize: '500% 100%',
+              background: `linear-gradient(90deg, ${C.black} 0%, ${C.blue} 12%, ${C.indigo} 25%, ${C.violet} 37%, ${C.purple} 50%, ${C.pink} 62%, ${C.rose} 75%, ${C.black} 87%, ${C.black} 100%)`,
+              backgroundSize: '600% 100%',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              letterSpacing: '-0.1em',
-              lineHeight: 0.9,
-              marginBottom: '24px',
+              letterSpacing: '-0.12em',
+              lineHeight: 0.85,
+              marginBottom: '28px',
               textTransform: 'uppercase',
-              animation: 'gradientShift 1.8s ease infinite',
-              filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.4))',
+              animation: 'gradientShift 1.2s ease infinite',
+              filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.5))',
             }}>
               TicTac
             </h1>
