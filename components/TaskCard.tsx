@@ -104,7 +104,6 @@ export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dra
         padding: '12px 16px',
         backgroundColor: isEditing ? GRAY_800 : GRAY_900,
         borderRadius: '8px',
-        borderLeft: isEditing ? '2px solid WHITE' : '2px solid transparent',
         cursor: isEditing ? 'text' : 'grab',
         transition: 'all 0.15s ease',
       }}

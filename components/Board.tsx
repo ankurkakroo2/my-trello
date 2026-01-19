@@ -230,7 +230,7 @@ function Column({ status, label, tasks, availableTags, isAdding, onAddStart, onA
         {isAdding ? (
           <InlineCreate onSave={onCreateTask} onCancel={onAddCancel} />
         ) : (
-          <div onClick={onAddStart} style={{ padding: '10px 16px', color: GRAY_600, fontSize: '14px', cursor: 'text', borderRadius: '8px', transition: 'all 0.15s', border: '1px dashed rgba(255,255,255,0.1)' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900, borderColor: 'rgba(255,255,255,0.2)', color: GRAY_500 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', borderColor: 'rgba(255,255,255,0.1)', color: GRAY_600 })}>
+          <div onClick={onAddStart} style={{ padding: '10px 16px', color: GRAY_600, fontSize: '14px', cursor: 'text', transition: 'color 0.15s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { color: GRAY_500 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { color: GRAY_600 })}>
             + New task
           </div>
         )}
@@ -239,7 +239,7 @@ function Column({ status, label, tasks, availableTags, isAdding, onAddStart, onA
   );
 }
 
-// Ultra-minimal inline create - single field, no borders
+// Ultra-minimal inline create - just text, no box visible
 function InlineCreate({ onSave, onCancel }: { onSave: (title: string) => void; onCancel: () => void }) {
   const [title, setTitle] = useState("");
   const inputRef = useRef<HTMLDivElement>(null);
@@ -277,24 +277,21 @@ function InlineCreate({ onSave, onCancel }: { onSave: (title: string) => void; o
   }, [title, submit, onCancel]);
 
   return (
-    <div style={{ padding: '10px 16px', backgroundColor: GRAY_900, borderRadius: '8px', borderLeft: '2px solid WHITE' }}>
-      <div
-        ref={inputRef}
-        contentEditable
-        suppressContentEditableWarning
-        data-placeholder="Task name..."
-        style={{
-          fontSize: '14px',
-          fontWeight: 500,
-          color: title ? WHITE : GRAY_500,
-          outline: 'none',
-          minHeight: '22px',
-          lineHeight: '1.4',
-        }}
-        onInput={e => setTitle(e.currentTarget.textContent || "")}
-      >{title}</div>
-      <style>{`[data-placeholder]:empty:before { content: attr(data-placeholder); color: #525252; }`}</style>
-    </div>
+    <div
+      ref={inputRef}
+      contentEditable
+      suppressContentEditableWarning
+      style={{
+        fontSize: '14px',
+        fontWeight: 400,
+        color: WHITE,
+        outline: 'none',
+        minHeight: '20px',
+        padding: '10px 16px',
+        cursor: 'text',
+      }}
+      onInput={e => setTitle(e.currentTarget.textContent || "")}
+    >{title || "New task..."}</div>
   );
 }
 
