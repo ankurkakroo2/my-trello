@@ -25,7 +25,6 @@ import {
   XMarkIcon,
   ArrowRightOnRectangleIcon,
   PencilIcon,
-  TrashIcon,
 } from "@heroicons/react/24/outline";
 
 const STATUSES: { value: TaskStatus; label: string }[] = [
@@ -57,11 +56,8 @@ export default function Board() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [editTitle, setEditTitle] = useState("");
   const filterRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLDivElement>(null);
-  const editInputRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -81,21 +77,6 @@ export default function Board() {
 
   useEffect(() => { fetchTasks(); fetchTags(); }, [fetchTasks]);
 
-  // Focus edit input when editing starts
-  useEffect(() => {
-    if (editingTask && editInputRef.current) {
-      editInputRef.current.focus();
-      // Select all text
-      const range = document.createRange();
-      const sel = window.getSelection();
-      if (editInputRef.current.firstChild && sel) {
-        range.selectNodeContents(editInputRef.current.firstChild);
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-    }
-  }, [editingTask]);
-
   // Handle click outside for filter dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -105,51 +86,24 @@ export default function Board() {
         handleCreateTask(newTaskTitle.trim());
         setNewTaskTitle("");
       }
-      // Save edit on click outside
-      if (editingTask && editInputRef.current && !editInputRef.current.contains(e.target as Node)) {
-        saveEdit();
-      }
     };
     document.addEventListener('mousedown', handleClickOutside as any);
     return () => document.removeEventListener('mousedown', handleClickOutside as any);
-  }, [newTaskTitle, editingTask, editTitle]);
+  }, [newTaskTitle]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeys = (e: KeyboardEvent) => {
-      // New task shortcuts
       if (e.key === 'Enter' && !e.shiftKey && document.activeElement === inputRef.current && newTaskTitle.trim()) {
         e.preventDefault();
         handleCreateTask(newTaskTitle.trim());
         setNewTaskTitle("");
-      }
-      // Edit shortcuts
-      if (e.key === 'Enter' && !e.shiftKey && editingTask && document.activeElement === editInputRef.current) {
-        e.preventDefault();
-        saveEdit();
-      }
-      if (e.key === 'Escape' && editingTask) {
-        setEditingTask(null);
-        setEditTitle("");
+        inputRef.current?.focus();
       }
     };
     document.addEventListener('keydown', handleKeys);
     return () => document.removeEventListener('keydown', handleKeys);
-  }, [newTaskTitle, editingTask, editTitle]);
-
-  const saveEdit = async () => {
-    if (!editingTask || !editTitle.trim()) return;
-    try {
-      await fetchWithRetry(`/api/tasks/${editingTask.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: editTitle.trim(), description: "", status: editingTask.status, tags: [] }),
-      });
-      setTasks(tasks.map(t => t.id === editingTask.id ? { ...t, title: editTitle.trim() } : t));
-    } catch {}
-    setEditingTask(null);
-    setEditTitle("");
-  };
+  }, [newTaskTitle]);
 
   const filteredTasks = tasks.filter(t =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -193,7 +147,18 @@ export default function Board() {
     } catch {}
   };
 
-  const handleDelete = async (id: number) => {
+  const handleUpdateTask = async (id: number, title: string) => {
+    try {
+      await fetchWithRetry(`/api/tasks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description: "", status: "not_started", tags: [] }),
+      });
+      setTasks(tasks.map(t => t.id === id ? { ...t, title } : t));
+    } catch {}
+  };
+
+  const handleDeleteTask = async (id: number) => {
     try {
       await fetchWithRetry(`/api/tasks/${id}`, { method: "DELETE" });
       setTasks(tasks.filter(t => t.id !== id));
@@ -209,7 +174,7 @@ export default function Board() {
       {/* Header */}
       <header style={{ position: 'sticky', top: 0, zIndex: 40, backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid #e5e5e5', padding: '16px 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: BLACK, letterSpacing: '-0.03em' }}>TicTac</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 800, color: BLACK, letterSpacing: '-0.03em' }}>TicTac</h1>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {/* Search */}
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -227,13 +192,13 @@ export default function Board() {
             )}
 
             {/* View toggle */}
-            <button onClick={() => setView(view === "board" ? "list" : "board")} style={{ padding: '10px', backgroundColor: view === "board" ? GRAY_100 : 'transparent', color: view === "board" ? BLACK : GRAY_500, borderRadius: '10px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} title="Toggle view">
+            <button onClick={() => setView(view === "board" ? "list" : "board")} style={{ padding: '10px', backgroundColor: view === "board" ? BLACK : 'transparent', color: view === "board" ? WHITE : GRAY_600, borderRadius: '10px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontWeight: 500, fontSize: '13px' }} title="Toggle view">
               {view === "board" ? <Squares2X2Icon style={{ width: '18px', height: '18px' }} /> : <ListBulletIcon style={{ width: '18px', height: '18px' }} />}
             </button>
 
             {/* Filter dropdown */}
             <div ref={filterRef} style={{ position: 'relative' }}>
-              <button onClick={() => setShowFilterDropdown(!showFilterDropdown)} style={{ padding: '10px', backgroundColor: showFilterDropdown ? GRAY_100 : 'transparent', color: showFilterDropdown ? BLACK : GRAY_500, borderRadius: '10px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} title="Filter by tag">
+              <button onClick={() => setShowFilterDropdown(!showFilterDropdown)} style={{ padding: '10px', backgroundColor: showFilterDropdown ? BLACK : 'transparent', color: showFilterDropdown ? WHITE : GRAY_600, borderRadius: '10px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontWeight: 500, fontSize: '13px' }} title="Filter by tag">
                 <TagIcon style={{ width: '18px', height: '18px' }} />
               </button>
               {showFilterDropdown && (
@@ -268,79 +233,49 @@ export default function Board() {
                   status={status.value}
                   label={status.label}
                   tasks={tasksByStatus[status.value]}
-                  onEditStart={(task) => { setEditingTask(task); setEditTitle(task.title); }}
-                  onDelete={handleDelete}
-                  editingTask={editingTask}
-                  editTitle={editTitle}
-                  setEditTitle={setEditTitle}
-                  editInputRef={editInputRef}
+                  onUpdate={handleUpdateTask}
+                  onDelete={handleDeleteTask}
                 />
               ))}
             </div>
           ) : (
-            <ListView tasks={filteredTasks} tags={tags} />
+            <ListView tasks={filteredTasks} tags={tags} onUpdate={handleUpdateTask} onDelete={handleDeleteTask} />
           )}
         </DndContext>
 
-        {/* Single create input at bottom */}
-        <div
-          ref={inputRef}
-          contentEditable
-          suppressContentEditableWarning
-          style={{
-            fontSize: '15px',
-            fontWeight: 400,
-            color: newTaskTitle ? BLACK : GRAY_400,
-            outline: 'none',
-            marginTop: '32px',
-            padding: '12px 16px',
-            cursor: 'text',
-            minHeight: '20px',
-            opacity: newTaskTitle ? 1 : 0.6,
-            transition: 'all 0.2s',
-            borderBottom: '2px solid transparent',
-          }}
-          onFocus={e => Object.assign(e.currentTarget.style, { borderBottomColor: BLACK, opacity: 1 })}
-          onBlur={e => Object.assign(e.currentTarget.style, { borderBottomColor: 'transparent', opacity: newTaskTitle ? 1 : 0.6 })}
-          onInput={e => setNewTaskTitle(e.currentTarget.textContent || "")}
-        >{newTaskTitle || "+ Add a task..."}</div>
-      </main>
-
-      {/* Edit modal */}
-      {editingTask && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={(e) => { if (e.target === e.currentTarget) { setEditingTask(null); setEditTitle(""); } }}>
-          <div style={{ backgroundColor: WHITE, borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
-            <div
-              ref={editInputRef}
-              contentEditable
-              suppressContentEditableWarning
-              style={{
-                fontSize: '18px',
-                fontWeight: 500,
-                color: BLACK,
-                outline: 'none',
-                minHeight: '28px',
-                padding: '8px 12px',
-                border: '2px solid BLACK',
-                borderRadius: '10px',
-              }}
-              onInput={e => setEditTitle(e.currentTarget.textContent || "")}
-            >{editTitle}</div>
-            <div style={{ marginTop: '16px', fontSize: '13px', color: GRAY_500 }}>Press Enter to save, Esc to cancel</div>
-          </div>
+        {/* Create input - minimal, at bottom */}
+        <div style={{ marginTop: '40px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ fontSize: '24px', color: GRAY_300 }}>+</div>
+          <div
+            ref={inputRef}
+            contentEditable
+            suppressContentEditableWarning
+            style={{
+              fontSize: '16px',
+              fontWeight: 400,
+              color: newTaskTitle ? BLACK : GRAY_400,
+              outline: 'none',
+              padding: '8px 0',
+              cursor: 'text',
+              minHeight: '24px',
+              flex: 1,
+              borderBottom: '1px solid transparent',
+            }}
+            onFocus={e => Object.assign(e.currentTarget.style, { borderBottomColor: BLACK })}
+            onBlur={e => Object.assign(e.currentTarget.style, { borderBottomColor: 'transparent' })}
+            onInput={e => setNewTaskTitle(e.currentTarget.textContent || "")}
+          >{newTaskTitle || "Add a task..."}</div>
         </div>
-      )}
+      </main>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
-function Column({ status, label, tasks, onEditStart, onDelete, editingTask, editTitle, setEditTitle, editInputRef }: {
-  status: TaskStatus; label: string; tasks: Task[]; availableTags?: any[];
-  onEditStart: (task: Task) => void; onDelete: (id: number) => void;
-  editingTask: Task | null; editTitle: string; setEditTitle: (title: string) => void;
-  editInputRef: React.RefObject<HTMLDivElement | null>;
+function Column({ status, label, tasks, onUpdate, onDelete }: {
+  status: TaskStatus; label: string; tasks: Task[];
+  onUpdate: (id: number, title: string) => void; onDelete: (id: number) => void;
 }) {
   const { setNodeRef } = useDroppable({ id: status, data: { status } });
   const taskIds = tasks.map(t => t.id.toString());
@@ -349,15 +284,15 @@ function Column({ status, label, tasks, onEditStart, onDelete, editingTask, edit
     <div ref={setNodeRef} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {/* Column header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: GRAY_500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</span>
-        <span style={{ fontSize: '13px', color: GRAY_400, fontWeight: 500 }}>{tasks.length}</span>
+        <span style={{ fontSize: '12px', fontWeight: 700, color: GRAY_400, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</span>
+        <span style={{ fontSize: '12px', color: GRAY_300, fontWeight: 600 }}>{tasks.length}</span>
       </div>
 
       {/* Tasks */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '60px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minHeight: '60px' }}>
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {tasks.map(task => (
-            <SortableTaskCard key={task.id} task={task} onEditStart={onEditStart} onDelete={onDelete} />
+            <SortableTaskCard key={task.id} task={task} onUpdate={onUpdate} onDelete={onDelete} />
           ))}
         </SortableContext>
       </div>
@@ -365,43 +300,173 @@ function Column({ status, label, tasks, onEditStart, onDelete, editingTask, edit
   );
 }
 
-function SortableTaskCard({ task, onEditStart, onDelete }: { task: Task; onEditStart: (task: Task) => void; onDelete: (id: number) => void }) {
+function SortableTaskCard({ task, onUpdate, onDelete }: { task: Task; onUpdate: (id: number, title: string) => void; onDelete: (id: number) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id.toString(), data: { status: task.status } });
 
   return (
-    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}>
-      <div
-        style={{
-          padding: '16px 18px',
-          backgroundColor: WHITE,
-          border: '1px solid #e5e5e5',
-          borderRadius: '12px',
-          cursor: 'grab',
-          transition: 'all 0.2s ease',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-        {...attributes}
-        {...listeners}
-        onMouseEnter={e => Object.assign(e.currentTarget.style, { borderColor: GRAY_300, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' })}
-        onMouseLeave={e => Object.assign(e.currentTarget.style, { borderColor: '#e5e5e5', boxShadow: 'none' })}
-      >
-        <span style={{ fontSize: '15px', fontWeight: 500, color: BLACK, flex: 1 }}>{task.title}</span>
-        <div style={{ display: 'flex', gap: '4px', marginLeft: '12px' }}>
-          <button onClick={(e) => { e.stopPropagation(); onEditStart(task); }} style={{ padding: '6px', color: GRAY_400, borderRadius: '6px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { color: BLACK, backgroundColor: GRAY_100 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { color: GRAY_400, backgroundColor: 'transparent' })}>
-            <PencilIcon style={{ width: '14px', height: '14px' }} />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} style={{ padding: '6px', color: GRAY_400, borderRadius: '6px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { color: '#dc2626', backgroundColor: '#fef2f2' })} onMouseLeave={e => Object.assign(e.currentTarget.style, { color: GRAY_400, backgroundColor: 'transparent' })}>
-            <TrashIcon style={{ width: '14px', height: '14px' }} />
-          </button>
-        </div>
-      </div>
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}>
+      <EditableTaskCard task={task} onUpdate={onUpdate} onDelete={onDelete} dragAttributes={attributes} dragListeners={listeners} />
     </div>
   );
 }
 
-function ListView({ tasks, tags }: { tasks: Task[]; tags: any[] }) {
+// Individual task card with inline edit
+function EditableTaskCard({ task, onUpdate, onDelete, dragAttributes, dragListeners }: {
+  task: Task; onUpdate: (id: number, title: string) => void; onDelete: (id: number) => void;
+  dragAttributes?: any; dragListeners?: any;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState(task.title);
+  const [showActions, setShowActions] = useState(false);
+  const inputRef = useRef<HTMLDivElement>(null);
+
+  const save = useCallback(() => {
+    if (title.trim()) {
+      onUpdate(task.id, title.trim());
+    }
+    setIsEditing(false);
+  }, [title, task.id, onUpdate]);
+
+  const cancel = useCallback(() => {
+    setTitle(task.title);
+    setIsEditing(false);
+  }, [task.title]);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      const range = document.createRange();
+      const sel = window.getSelection();
+      if (inputRef.current.firstChild && sel) {
+        range.selectNodeContents(inputRef.current.firstChild);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+  }, [isEditing]);
+
+  useEffect(() => {
+    if (!isEditing) return;
+    const handleClick = (e: MouseEvent) => {
+      if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
+        save();
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') cancel();
+    };
+    const handleEnter = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        save();
+      }
+    };
+    document.addEventListener('mousedown', handleClick as any);
+    document.addEventListener('keydown', handleEsc);
+    document.addEventListener('keydown', handleEnter);
+    return () => {
+      document.removeEventListener('mousedown', handleClick as any);
+      document.removeEventListener('keydown', handleEsc);
+      document.removeEventListener('keydown', handleEnter);
+    };
+  }, [isEditing, save, cancel]);
+
+  return (
+    <div
+      style={{
+        padding: '14px 16px',
+        backgroundColor: WHITE,
+        border: isEditing ? '1px solid BLACK' : '1px solid #f5f5f5',
+        borderRadius: '10px',
+        cursor: isEditing ? 'text' : 'grab',
+        transition: 'all 0.15s',
+        position: 'relative',
+      }}
+      {...(isEditing ? {} : dragAttributes)}
+      {...(isEditing ? {} : dragListeners)}
+      onMouseEnter={e => { if (!isEditing) { setShowActions(true); Object.assign(e.currentTarget.style, { borderColor: '#e5e5e5' }); } }}
+      onMouseLeave={e => { if (!isEditing) { setShowActions(false); Object.assign(e.currentTarget.style, { borderColor: '#f5f5f5' }); } }}
+    >
+      <div
+        ref={inputRef}
+        contentEditable={isEditing}
+        suppressContentEditableWarning
+        onClick={() => !isEditing && setIsEditing(true)}
+        style={{
+          fontSize: '15px',
+          fontWeight: 500,
+          color: BLACK,
+          outline: 'none',
+          minHeight: '22px',
+          paddingRight: showActions && !isEditing ? '80px' : '0',
+        }}
+        onInput={e => setTitle(e.currentTarget.textContent || "")}
+      >
+        {isEditing ? title : task.title}
+      </div>
+
+      {/* Edit button - shows on hover */}
+      {showActions && !isEditing && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+          style={{
+            position: 'absolute',
+            right: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            padding: '6px',
+            color: GRAY_400,
+            backgroundColor: WHITE,
+            borderRadius: '6px',
+            cursor: 'pointer',
+            border: '1px solid #e5e5e5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '11px',
+            fontWeight: 500,
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => Object.assign(e.currentTarget.style, { color: BLACK, borderColor: BLACK })}
+          onMouseLeave={e => Object.assign(e.currentTarget.style, { color: GRAY_400, borderColor: '#e5e5e5' })}
+        >
+          Edit
+        </button>
+      )}
+
+      {/* Delete button - shows on hover */}
+      {showActions && !isEditing && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+          style={{
+            position: 'absolute',
+            right: '56px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            padding: '6px',
+            color: GRAY_400,
+            backgroundColor: WHITE,
+            borderRadius: '6px',
+            cursor: 'pointer',
+            border: '1px solid #e5e5e5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '11px',
+            fontWeight: 500,
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => Object.assign(e.currentTarget.style, { color: '#dc2626', borderColor: '#dc2626' })}
+          onMouseLeave={e => Object.assign(e.currentTarget.style, { color: GRAY_400, borderColor: '#e5e5e5' })}
+        >
+          <PencilIcon style={{ width: '12px', height: '12px' }} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ListView({ tasks, tags, onUpdate, onDelete }: { tasks: Task[]; tags: any[]; onUpdate: (id: number, title: string) => void; onDelete: (id: number) => void }) {
   const grouped = [
     { label: "To Do", tasks: tasks.filter(t => t.status === "not_started") },
     { label: "In Progress", tasks: tasks.filter(t => t.status === "in_progress") },
@@ -412,9 +477,9 @@ function ListView({ tasks, tags }: { tasks: Task[]; tags: any[] }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {grouped.map(group => (
         <div key={group.label}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: GRAY_500, padding: '4px 8px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{group.label} · {group.tasks.length}</div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: GRAY_400, padding: '4px 8px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{group.label} · {group.tasks.length}</div>
           {group.tasks.map(task => (
-            <div key={task.id} style={{ padding: '14px 18px', backgroundColor: WHITE, border: '1px solid #e5e5e5', borderRadius: '10px', marginTop: '6px', transition: 'all 0.2s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { borderColor: GRAY_300, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' })} onMouseLeave={e => Object.assign(e.currentTarget.style, { borderColor: '#e5e5e5', boxShadow: 'none' })}>
+            <div key={task.id} style={{ padding: '12px 16px', backgroundColor: WHITE, border: '1px solid #f5f5f5', borderRadius: '8px', marginTop: '4px' }}>
               <span style={{ fontSize: '15px', color: BLACK }}>{task.title}</span>
             </div>
           ))}
