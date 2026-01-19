@@ -4,6 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+// Bold dark theme colors
+const BLACK = "#000000";
+const GRAY_800 = "#171717";
+const GRAY_700 = "#262617";
+const GRAY_400 = "#737373";
+const GRAY_300 = "#a3a3a3";
+const WHITE = "#ffffff";
+const RED_500 = "#ef4444";
+const RED_900 = "#7f1d1d";
+
 export default function SignUpPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -53,33 +63,31 @@ export default function SignUpPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: '#ffffff',
+      backgroundColor: BLACK,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '16px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", sans-serif'
     }}>
-      <div style={{ width: '100%', maxWidth: '400px' }}>
+      <div style={{ width: '100%', maxWidth: '380px' }}>
         <div style={{
-          backgroundColor: '#ffffff',
           padding: '40px 0',
           textAlign: 'center'
         }}>
           <h1 style={{
-            fontSize: '28px',
-            fontWeight: 600,
-            color: '#111827',
+            fontSize: '32px',
+            fontWeight: 700,
+            color: WHITE,
             marginBottom: '8px',
-            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+            letterSpacing: '-0.02em',
           }}>
             TicTac
           </h1>
           <p style={{
-            fontSize: '15px',
-            color: '#6b7280',
+            fontSize: '14px',
+            color: GRAY_400,
             marginBottom: '40px',
-            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
           }}>
             Create your account
           </p>
@@ -87,11 +95,11 @@ export default function SignUpPage() {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {error && (
               <div style={{
-                padding: '10px 12px',
-                backgroundColor: '#fef2f2',
-                border: '1px solid #fecaca',
-                borderRadius: '8px',
-                color: '#ef4444',
+                padding: '12px',
+                backgroundColor: RED_900,
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '10px',
+                color: RED_500,
                 fontSize: '13px',
                 textAlign: 'left',
               }}>
@@ -102,11 +110,10 @@ export default function SignUpPage() {
             <div>
               <label htmlFor="email" style={{
                 display: 'block',
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: 500,
-                marginBottom: '6px',
-                color: '#374151',
-                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                marginBottom: '8px',
+                color: GRAY_300,
                 textAlign: 'left',
               }}>
                 Email
@@ -118,28 +125,29 @@ export default function SignUpPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '10px 12px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '15px',
-                  color: '#111827',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                  padding: '12px',
+                  backgroundColor: GRAY_800,
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  color: WHITE,
                   outline: 'none',
+                  transition: 'all 0.2s ease',
                 }}
                 placeholder="you@example.com"
                 required
+                onFocus={(e) => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255, 255, 255, 0.15)', backgroundColor: GRAY_700 })}
+                onBlur={(e) => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: GRAY_800 })}
               />
             </div>
 
             <div>
               <label htmlFor="password" style={{
                 display: 'block',
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: 500,
-                marginBottom: '6px',
-                color: '#374151',
-                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                marginBottom: '8px',
+                color: GRAY_300,
                 textAlign: 'left',
               }}>
                 Password
@@ -151,29 +159,30 @@ export default function SignUpPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '10px 12px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '15px',
-                  color: '#111827',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                  padding: '12px',
+                  backgroundColor: GRAY_800,
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  color: WHITE,
                   outline: 'none',
+                  transition: 'all 0.2s ease',
                 }}
                 placeholder="•••••••••"
                 required
                 minLength={6}
+                onFocus={(e) => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255, 255, 255, 0.15)', backgroundColor: GRAY_700 })}
+                onBlur={(e) => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: GRAY_800 })}
               />
             </div>
 
             <div>
               <label htmlFor="confirmPassword" style={{
                 display: 'block',
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: 500,
-                marginBottom: '6px',
-                color: '#374151',
-                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                marginBottom: '8px',
+                color: GRAY_300,
                 textAlign: 'left',
               }}>
                 Confirm Password
@@ -185,18 +194,20 @@ export default function SignUpPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '10px 12px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '15px',
-                  color: '#111827',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                  padding: '12px',
+                  backgroundColor: GRAY_800,
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  color: WHITE,
                   outline: 'none',
+                  transition: 'all 0.2s ease',
                 }}
                 placeholder="•••••••••"
                 required
                 minLength={6}
+                onFocus={(e) => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255, 255, 255, 0.15)', backgroundColor: GRAY_700 })}
+                onBlur={(e) => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: GRAY_800 })}
               />
             </div>
 
@@ -205,25 +216,26 @@ export default function SignUpPage() {
               disabled={isLoading}
               style={{
                 width: '100%',
-                padding: '10px',
-                backgroundColor: '#111827',
-                color: '#ffffff',
-                fontWeight: 500,
-                fontSize: '15px',
+                padding: '12px',
+                backgroundColor: WHITE,
+                color: BLACK,
+                fontWeight: 600,
+                fontSize: '14px',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '10px',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 opacity: isLoading ? 0.5 : 1,
-                transition: 'all 0.15s',
-                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
               onMouseEnter={(e) => {
                 if (!isLoading) {
-                  e.currentTarget.style.backgroundColor = '#374151';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(255, 255, 255, 0.15)';
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#111827';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             >
               {isLoading ? "Creating account..." : "Sign up"}
@@ -233,18 +245,16 @@ export default function SignUpPage() {
 
         <div style={{ textAlign: 'center' }}>
           <p style={{
-            color: '#6b7280',
-            fontSize: '14px',
-            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+            color: GRAY_400,
+            fontSize: '13px',
           }}>
             Already have an account?{" "}
             <Link
               href="/auth/signin"
               style={{
                 fontWeight: 500,
-                color: '#3b82f6',
+                color: WHITE,
                 textDecoration: 'none',
-                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
               }}
             >
               Sign in

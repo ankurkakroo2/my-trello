@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, MouseEvent, useCallback } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Task, TaskStatus } from "@/lib/types";
@@ -20,201 +20,122 @@ const STATUSES = [
   { value: "complete" as TaskStatus, label: "Done" },
 ];
 
-// Clean theme colors
+// Bold dark theme - shades of grey to black
+const BLACK = "#000000";
+const GRAY_900 = "#0a0a0a";
+const GRAY_800 = "#171717";
+const GRAY_700 = "#262626";
+const GRAY_600 = "#404040";
+const GRAY_500 = "#525252";
+const GRAY_400 = "#737373";
+const GRAY_300 = "#a3a3a3";
+const GRAY_200 = "#d4d4d4";
+const GRAY_100 = "#e5e5e5";
+const GRAY_50 = "#f5f5f5";
 const WHITE = "#ffffff";
-const GRAY_50 = "#f9fafb";
-const GRAY_100 = "#f3f4f6";
-const GRAY_200 = "#e5e7eb";
-const GRAY_300 = "#d1d5db";
-const GRAY_400 = "#9ca3af";
-const GRAY_500 = "#6b7280";
-const GRAY_600 = "#4b5563";
-const GRAY_700 = "#374151";
-const GRAY_800 = "#1f2937";
-const GRAY_900 = "#111827";
-const BLUE_500 = "#3b82f6";
-const BLUE_50 = "#eff6ff";
-const BLUE_100 = "#dbeafe";
-const RED_500 = "#ef4444";
-const RED_50 = "#fef2f2";
 
 const styles = {
   card: {
-    backgroundColor: WHITE,
-    border: `1px solid ${GRAY_200}`,
+    backgroundColor: GRAY_800,
+    border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: '10px',
     padding: '14px',
     cursor: 'move',
-    transition: 'all 0.2s',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", sans-serif',
+    position: 'relative' as const,
   },
   cardHover: {
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+    backgroundColor: GRAY_700,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     transform: 'translateY(-2px)',
+    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4)',
   },
   title: {
     fontSize: '14px',
     fontWeight: 500,
-    color: GRAY_900,
+    color: WHITE,
     marginBottom: '6px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+    lineHeight: '1.4',
   },
   description: {
     fontSize: '13px',
-    color: GRAY_500,
+    color: GRAY_400,
     marginBottom: '10px',
     lineHeight: '1.4',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
   },
   tag: {
     display: 'inline-block',
-    padding: '2px 8px',
-    borderRadius: '4px',
+    padding: '3px 8px',
+    borderRadius: '5px',
     fontSize: '11px',
     color: WHITE,
     marginRight: '4px',
     marginBottom: '4px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
     fontWeight: 500,
   },
+  // Edit mode styles
   editContainer: {
-    backgroundColor: WHITE,
-    border: `1px solid ${GRAY_200}`,
+    backgroundColor: GRAY_800,
+    border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: '10px',
     padding: '14px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+    animation: 'slideIn 0.2s ease-out',
   },
   inlineInput: {
     width: '100%',
-    padding: '6px 8px',
-    backgroundColor: WHITE,
-    border: `1px solid ${GRAY_300}`,
-    borderRadius: '6px',
+    padding: '8px 0',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
     fontSize: '14px',
-    color: GRAY_900,
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+    color: WHITE,
+    fontFamily: 'inherit',
     outline: 'none',
+    transition: 'border-color 0.2s ease',
     marginBottom: '8px',
   },
   inlineInputFocus: {
-    borderColor: BLUE_500,
-    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
-  },
-  inlineTextarea: {
-    width: '100%',
-    padding: '6px 8px',
-    backgroundColor: WHITE,
-    border: `1px solid ${GRAY_300}`,
-    borderRadius: '6px',
-    fontSize: '13px',
-    color: GRAY_700,
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-    outline: 'none',
-    resize: 'vertical' as const,
-    minHeight: '60px',
-    marginBottom: '12px',
+    borderBottomColor: WHITE,
   },
   statusButton: {
-    padding: '4px 10px',
-    border: `1px solid ${GRAY_200}`,
+    padding: '6px 12px',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
     fontSize: '12px',
     fontWeight: 500,
-    backgroundColor: WHITE,
-    color: GRAY_600,
+    backgroundColor: 'transparent',
+    color: GRAY_400,
     cursor: 'pointer',
-    transition: 'all 0.15s',
-    marginRight: '4px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+    transition: 'all 0.15s ease',
+    marginRight: '6px',
     borderRadius: '6px',
   },
   statusButtonHover: {
-    borderColor: GRAY_300,
-    backgroundColor: GRAY_50,
+    backgroundColor: GRAY_700,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    color: WHITE,
   },
   statusButtonActive: {
-    backgroundColor: BLUE_500,
+    backgroundColor: GRAY_600,
     color: WHITE,
-    borderColor: BLUE_500,
-  },
-  buttonGroup: {
-    display: 'flex',
-    gap: '6px',
-    marginTop: '12px',
-  },
-  primaryButton: {
-    flex: 1,
-    padding: '6px 12px',
-    backgroundColor: BLUE_500,
-    color: WHITE,
-    border: 'none',
-    fontSize: '13px',
-    fontWeight: 500,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '4px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-    borderRadius: '6px',
-    transition: 'all 0.15s',
-  },
-  primaryButtonHover: {
-    backgroundColor: '#2563eb',
-  },
-  secondaryButton: {
-    padding: '6px 12px',
-    backgroundColor: 'transparent',
-    color: GRAY_500,
-    border: 'none',
-    fontSize: '13px',
-    cursor: 'pointer',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-    borderRadius: '6px',
-  },
-  secondaryButtonHover: {
-    color: GRAY_700,
-    backgroundColor: GRAY_50,
-  },
-  dangerButton: {
-    padding: '6px 12px',
-    backgroundColor: 'transparent',
-    color: GRAY_400,
-    border: 'none',
-    fontSize: '13px',
-    cursor: 'pointer',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-    borderRadius: '6px',
-  },
-  dangerButtonHover: {
-    color: RED_500,
-    backgroundColor: RED_50,
-  },
-  confirmDeleteButton: {
-    padding: '6px 12px',
-    backgroundColor: RED_500,
-    color: WHITE,
-    border: 'none',
-    fontSize: '13px',
-    cursor: 'pointer',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-    borderRadius: '6px',
-  },
-  confirmDeleteButtonHover: {
-    backgroundColor: '#dc2626',
-  },
-  errorText: {
-    color: RED_500,
-    fontSize: '12px',
-    marginTop: '-4px',
-    marginBottom: '8px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+    borderColor: GRAY_500,
   },
   hintText: {
+    fontSize: '11px',
+    color: GRAY_500,
+    marginTop: '10px',
+  },
+  dangerText: {
+    color: '#f87171',
     fontSize: '12px',
-    color: GRAY_400,
-    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+    cursor: 'pointer',
+    padding: '4px 8px',
+    borderRadius: '6px',
+    transition: 'all 0.15s ease',
+  },
+  dangerTextHover: {
+    backgroundColor: 'rgba(248, 113, 113, 0.1)',
   },
 };
 
@@ -224,8 +145,7 @@ export default function TaskCard({ task, availableTags, onUpdate, onDelete, drag
   const [editDescription, setEditDescription] = useState(task.description || "");
   const [editStatus, setEditStatus] = useState<TaskStatus>(task.status);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [titleError, setTitleError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -254,13 +174,8 @@ export default function TaskCard({ task, availableTags, onUpdate, onDelete, drag
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleSave = async () => {
-    if (!editTitle.trim()) {
-      setTitleError("Title is required");
-      return;
-    }
-    setIsSubmitting(true);
-    setTitleError("");
+  const handleSave = useCallback(async () => {
+    if (!editTitle.trim()) return;
     await onUpdate(task.id, {
       title: editTitle.trim(),
       description: editDescription.trim(),
@@ -268,16 +183,15 @@ export default function TaskCard({ task, availableTags, onUpdate, onDelete, drag
       tags: [],
     });
     setIsEditing(false);
-    setIsSubmitting(false);
-  };
+  }, [editTitle, editDescription, editStatus, task.id, onUpdate]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setEditTitle(task.title);
     setEditDescription(task.description || "");
     setEditStatus(task.status);
-    setTitleError("");
     setIsEditing(false);
-  };
+    setShowDeleteConfirm(false);
+  }, [task.title, task.description, task.status]);
 
   const confirmDelete = () => {
     setShowDeleteConfirm(false);
@@ -294,31 +208,48 @@ export default function TaskCard({ task, availableTags, onUpdate, onDelete, drag
     }
   };
 
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    if (isEditing && containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (editTitle.trim()) {
+        handleSave();
+      } else {
+        handleCancel();
+      }
+    }
+  }, [isEditing, editTitle, handleSave, handleCancel]);
+
+  useEffect(() => {
+    if (isEditing) {
+      document.addEventListener('mousedown', handleClickOutside as any);
+      return () => document.removeEventListener('mousedown', handleClickOutside as any);
+    }
+  }, [isEditing, handleClickOutside]);
+
   if (isEditing) {
     return (
-      <div ref={setNodeRef} style={{ ...style, ...styles.editContainer }}>
+      <div ref={containerRef} style={{ ...style, ...styles.editContainer }}>
         {showDeleteConfirm ? (
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
-            <p style={{ color: GRAY_700, marginBottom: '16px', fontSize: '14px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+            <p style={{ color: WHITE, marginBottom: '16px', fontSize: '14px' }}>
               Delete this task?
             </p>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                style={styles.secondaryButton}
-                onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.secondaryButtonHover)}
-                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_500 })}
+              <span
+                onClick={handleCancel}
+                style={{ ...styles.statusButton, cursor: 'pointer' }}
+                onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.statusButtonHover)}
+                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', borderColor: 'rgba(255, 255, 255, 0.1)', color: GRAY_400 })}
               >
                 Cancel
-              </button>
-              <button
+              </span>
+              <span
                 onClick={confirmDelete}
-                style={styles.confirmDeleteButton}
-                onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.confirmDeleteButtonHover)}
-                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: RED_500 })}
+                style={{ ...styles.statusButton, backgroundColor: '#dc2626', borderColor: '#dc2626', color: WHITE, cursor: 'pointer' }}
+                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { backgroundColor: '#b91c1c' })}
+                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: '#dc2626', borderColor: '#dc2626' })}
               >
                 Delete
-              </button>
+              </span>
             </div>
           </div>
         ) : (
@@ -327,89 +258,52 @@ export default function TaskCard({ task, availableTags, onUpdate, onDelete, drag
               ref={titleInputRef}
               type="text"
               value={editTitle}
-              onChange={(e) => { setEditTitle(e.target.value); setTitleError(""); }}
-              style={{
-                ...styles.inlineInput,
-                borderColor: titleError ? RED_500 : GRAY_300,
-                boxShadow: titleError ? '0 0 0 3px rgba(239, 68, 68, 0.1)' : 'none',
-              }}
-              placeholder="Task title"
-              autoFocus
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Task title..."
+              style={styles.inlineInput}
+              onKeyDown={handleKeyDown}
               onFocus={(e) => Object.assign(e.currentTarget.style, styles.inlineInputFocus)}
+              onBlur={(e) => Object.assign(e.currentTarget.style, { borderBottomColor: 'rgba(255, 255, 255, 0.15)' })}
             />
-            {titleError && <p style={styles.errorText}>{titleError}</p>}
-
-            <textarea
+            <input
+              type="text"
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
-              style={styles.inlineTextarea}
-              placeholder="Add a description..."
-              rows={2}
-              onFocus={(e) => {
-                Object.assign(e.currentTarget.style, {
-                  borderColor: BLUE_500,
-                  boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
-                });
-              }}
-              onBlur={(e) => {
-                Object.assign(e.currentTarget.style, styles.inlineTextarea);
-              }}
+              placeholder="Add description (optional)..."
+              style={{ ...styles.inlineInput, fontSize: '13px', color: GRAY_400, marginBottom: '12px' }}
+              onKeyDown={handleKeyDown}
+              onFocus={(e) => Object.assign(e.currentTarget.style, styles.inlineInputFocus)}
+              onBlur={(e) => Object.assign(e.currentTarget.style, { borderBottomColor: 'rgba(255, 255, 255, 0.15)' })}
             />
 
             <div style={{ marginBottom: '12px' }}>
               {STATUSES.map((s) => (
-                <button
+                <span
                   key={s.value}
-                  type="button"
                   onClick={() => setEditStatus(s.value)}
                   style={{
                     ...styles.statusButton,
                     ...(editStatus === s.value ? styles.statusButtonActive : {}),
-                    ...(editStatus !== s.value ? { onMouseEnter: (e) => Object.assign(e.currentTarget.style, styles.statusButtonHover), onMouseLeave: (e) => Object.assign(e.currentTarget.style, { backgroundColor: WHITE, borderColor: GRAY_200, color: GRAY_600 }) } : {}),
+                    ...(editStatus !== s.value ? { onMouseEnter: (e: React.MouseEvent<HTMLSpanElement>) => Object.assign(e.currentTarget.style, styles.statusButtonHover), onMouseLeave: (e: React.MouseEvent<HTMLSpanElement>) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', borderColor: 'rgba(255, 255, 255, 0.1)', color: GRAY_400 }) } : {}),
                   }}
                 >
                   {s.label}
-                </button>
+                </span>
               ))}
             </div>
 
-            <div style={styles.buttonGroup}>
-              <button
-                type="button"
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span
                 onClick={() => setShowDeleteConfirm(true)}
-                style={styles.dangerButton}
-                onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.dangerButtonHover)}
-                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_400 })}
+                style={styles.dangerText}
+                onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.dangerTextHover)}
+                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}
               >
                 Delete
-              </button>
-              <div style={{ flex: 1 }} />
-              <button
-                type="button"
-                onClick={handleCancel}
-                style={styles.secondaryButton}
-                onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.secondaryButtonHover)}
-                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_500 })}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={!editTitle.trim() || isSubmitting}
-                style={{
-                  ...styles.primaryButton,
-                  opacity: (!editTitle.trim() || isSubmitting) ? 0.5 : 1,
-                }}
-                onMouseEnter={(e) => (editTitle.trim() && !isSubmitting) && Object.assign(e.currentTarget.style, styles.primaryButtonHover)}
-                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: BLUE_500 })}
-              >
-                {isSubmitting ? "Saving..." : "Save"}
-              </button>
-            </div>
-
-            <div style={{ marginTop: '8px' }}>
-              <p style={styles.hintText}>Press Enter to save · Escape to cancel</p>
+              </span>
+              <span style={{ fontSize: '11px', color: GRAY_500 }}>
+                Enter to save · Esc to cancel
+              </span>
             </div>
           </>
         )}
@@ -425,7 +319,7 @@ export default function TaskCard({ task, availableTags, onUpdate, onDelete, drag
       {...(dragListeners || {})}
       onClick={() => setIsEditing(true)}
       onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.cardHover)}
-      onMouseLeave={(e) => Object.assign(e.currentTarget.style, { boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transform: 'translateY(0)' })}
+      onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800, borderColor: 'rgba(255, 255, 255, 0.06)', transform: 'translateY(0)', boxShadow: 'none' })}
     >
       <h3 style={styles.title}>{task.title}</h3>
       {task.description && <p style={styles.description}>{task.description}</p>}

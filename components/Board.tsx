@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, MouseEvent } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -19,7 +19,11 @@ import { Task, TaskStatus } from "@/lib/types";
 import { fetchWithRetry } from "@/lib/utils";
 import { signOut } from "next-auth/react";
 import {
+  Squares2X2Icon,
+  ListBulletIcon,
   MagnifyingGlassIcon,
+  TagIcon,
+  XMarkIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 
@@ -29,51 +33,270 @@ const STATUSES: { value: TaskStatus; label: string }[] = [
   { value: "complete", label: "Done" },
 ];
 
-// Clean theme colors
+// Bold dark theme - shades of grey to black
+const BLACK = "#000000";
+const GRAY_900 = "#0a0a0a";
+const GRAY_800 = "#171717";
+const GRAY_700 = "#262626";
+const GRAY_600 = "#404040";
+const GRAY_500 = "#525252";
+const GRAY_400 = "#737373";
+const GRAY_300 = "#a3a3a3";
+const GRAY_200 = "#d4d4d4";
+const GRAY_100 = "#e5e5e5";
+const GRAY_50 = "#f5f5f5";
 const WHITE = "#ffffff";
-const GRAY_50 = "#f9fafb";
-const GRAY_100 = "#f3f4f6";
-const GRAY_200 = "#e5e7eb";
-const GRAY_300 = "#d1d5db";
-const GRAY_400 = "#9ca3af";
-const GRAY_500 = "#6b7280";
-const GRAY_600 = "#4b5563";
-const GRAY_700 = "#374151";
-const GRAY_800 = "#1f2937";
-const GRAY_900 = "#111827";
-const BLUE_500 = "#3b82f6";
-const BLUE_50 = "#eff6ff";
-const BLUE_100 = "#dbeafe";
-const GREEN_500 = "#22c55e";
-const GREEN_50 = "#f0fdf4";
-const RED_500 = "#ef4444";
-const RED_50 = "#fef2f2";
 
 const styles = {
-  page: { minHeight: '100vh', backgroundColor: WHITE, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' },
-  header: { position: 'sticky' as const, top: 0, zIndex: 40, backgroundColor: WHITE, borderBottom: `1px solid ${GRAY_200}`, padding: '16px 24px' },
-  headerContent: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' },
-  title: { fontSize: '20px', fontWeight: 600, color: GRAY_900, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' },
-  searchBox: { position: 'relative' as const, display: 'flex', alignItems: 'center' },
-  searchInput: { width: '240px', paddingLeft: '36px', paddingRight: '12px', padding: '8px 12px 8px 36px', backgroundColor: WHITE, border: `1px solid ${GRAY_200}`, borderRadius: '8px', fontSize: '14px', color: GRAY_700, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' },
-  searchIcon: { position: 'absolute', left: '12px', color: GRAY_400, width: '16px', height: '16px', pointerEvents: 'none' },
-  button: { padding: '8px 14px', backgroundColor: WHITE, border: `1px solid ${GRAY_200}`, color: GRAY_700, fontSize: '14px', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', borderRadius: '8px' },
-  buttonHover: { backgroundColor: GRAY_50, borderColor: GRAY_300 },
-  main: { padding: '24px', maxWidth: '1400px', margin: '0 auto' },
-  boardGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' },
-  column: { backgroundColor: GRAY_50, border: `1px solid ${GRAY_200}`, borderRadius: '12px', display: 'flex', flexDirection: 'column' as const, minHeight: '400px' },
-  columnHeader: { padding: '16px', borderBottom: `1px solid ${GRAY_200}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  columnTitle: { fontSize: '15px', fontWeight: 600, color: GRAY_700, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' },
-  taskCount: { fontSize: '13px', padding: '2px 8px', backgroundColor: GRAY_200, color: GRAY_600, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 500, borderRadius: '12px' },
-  columnContent: { padding: '12px', display: 'flex', flexDirection: 'column' as const, gap: '8px' },
-  addTaskInline: { padding: '12px', border: `1px solid ${GRAY_200}`, borderRadius: '8px', backgroundColor: WHITE },
-  loading: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: WHITE, fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' },
+  page: {
+    minHeight: '100vh',
+    backgroundColor: BLACK,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", sans-serif',
+    color: WHITE,
+  },
+  header: {
+    position: 'sticky' as const,
+    top: 0,
+    zIndex: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backdropFilter: 'blur(20px)',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    padding: '16px 24px',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  headerContent: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '16px',
+  },
+  title: {
+    fontSize: '18px',
+    fontWeight: 700,
+    color: WHITE,
+    letterSpacing: '-0.02em',
+  },
+  controlsRow: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+  },
+  searchBox: {
+    position: 'relative' as const,
+    display: 'flex',
+    alignItems: 'center',
+  },
+  searchInput: {
+    width: '200px',
+    padding: '8px 12px 8px 36px',
+    backgroundColor: GRAY_900,
+    border: '1px solid transparent',
+    borderRadius: '8px',
+    fontSize: '14px',
+    color: WHITE,
+    fontFamily: 'inherit',
+    outline: 'none',
+    transition: 'all 0.2s ease',
+  },
+  searchInputFocus: {
+    backgroundColor: GRAY_800,
+    borderColor: GRAY_600,
+  },
+  searchIcon: {
+    position: 'absolute' as const,
+    left: '12px',
+    color: GRAY_500,
+    width: '16px',
+    height: '16px',
+    pointerEvents: 'none' as const,
+    transition: 'color 0.2s ease',
+  },
+  iconButton: {
+    padding: '8px',
+    backgroundColor: GRAY_900,
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    color: GRAY_400,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '8px',
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  iconButtonActive: {
+    backgroundColor: GRAY_700,
+    borderColor: GRAY_600,
+    color: WHITE,
+  },
+  iconButtonHover: {
+    backgroundColor: GRAY_800,
+    borderColor: GRAY_600,
+    color: WHITE,
+    transform: 'translateY(-1px)',
+  },
+  tagFilterContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '6px 12px',
+    backgroundColor: GRAY_900,
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: '8px',
+  },
+  tagBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '4px 8px',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: 500,
+  },
+  tagBadgeRemove: {
+    cursor: 'pointer' as const,
+    padding: '2px',
+    borderRadius: '4px',
+    transition: 'all 0.15s ease',
+  },
+  tagBadgeRemoveHover: {
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  main: {
+    padding: '24px',
+    maxWidth: '1600px',
+    margin: '0 auto',
+  },
+  boardGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gap: '20px',
+    animation: 'fadeIn 0.4s ease-out',
+  },
+  column: {
+    backgroundColor: GRAY_900,
+    border: '1px solid rgba(255, 255, 255, 0.06)',
+    borderRadius: '12px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    minHeight: '500px',
+    transition: 'all 0.3s ease',
+  },
+  columnHover: {
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  columnHeader: {
+    padding: '16px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  columnTitle: {
+    fontSize: '14px',
+    fontWeight: 600,
+    color: GRAY_300,
+    letterSpacing: '-0.01em',
+  },
+  taskCount: {
+    fontSize: '12px',
+    padding: '4px 8px',
+    backgroundColor: GRAY_800,
+    color: GRAY_400,
+    fontWeight: 500,
+    borderRadius: '20px',
+  },
+  columnContent: {
+    padding: '12px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '8px',
+  },
+  loading: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    backgroundColor: BLACK,
+  },
+  // List view styles
+  listView: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+    animation: 'fadeIn 0.4s ease-out',
+  },
+  listGroup: {
+    marginBottom: '24px',
+  },
+  listGroupHeader: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: GRAY_500,
+    padding: '8px 16px',
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+  },
+  listRow: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '12px 16px',
+    backgroundColor: GRAY_900,
+    border: '1px solid transparent',
+    borderRadius: '8px',
+    transition: 'all 0.15s ease',
+  },
+  listRowHover: {
+    backgroundColor: GRAY_800,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  listRowTitle: {
+    flex: 1,
+    fontSize: '14px',
+    color: GRAY_200,
+  },
+  listRowStatus: {
+    fontSize: '12px',
+    padding: '4px 8px',
+    backgroundColor: GRAY_800,
+    color: GRAY_400,
+    borderRadius: '6px',
+  },
+  newTaskPlaceholder: {
+    padding: '12px',
+    color: GRAY_500,
+    fontSize: '14px',
+    cursor: 'text',
+    border: '1px solid transparent',
+    borderRadius: '8px',
+    transition: 'all 0.2s ease',
+  },
+  newTaskPlaceholderHover: {
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    color: GRAY_400,
+  },
+  inlineInput: {
+    width: '100%',
+    padding: '8px 0',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+    fontSize: '14px',
+    color: WHITE,
+    fontFamily: 'inherit',
+    outline: 'none',
+    transition: 'border-color 0.2s ease',
+  },
+  inlineInputFocus: {
+    borderBottomColor: WHITE,
+  },
 };
 
 export default function Board() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Array<{ id: number; name: string; color: string; taskCount: number }>>([]);
+  const [view, setView] = useState<"board" | "list">("board");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterTag, setFilterTag] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [addingToColumn, setAddingToColumn] = useState<TaskStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,12 +307,14 @@ export default function Board() {
 
   const fetchTasks = useCallback(async () => {
     try {
-      const response = await fetchWithRetry("/api/tasks");
+      const params = new URLSearchParams();
+      if (filterTag) params.append("tagId", filterTag.toString());
+      const response = await fetchWithRetry(`/api/tasks?${params}`);
       if (response.ok) setTasks(await response.json());
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [filterTag]);
 
   const fetchTags = async () => {
     try {
@@ -149,9 +374,7 @@ export default function Board() {
       const newTask = await response.json();
       setTasks(prev => [...prev, newTask]);
       setAddingToColumn(null);
-    } catch {
-      // Silent error handling
-    }
+    } catch {}
   };
 
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
@@ -160,8 +383,7 @@ export default function Board() {
     return (
       <div style={styles.loading}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '20px', height: '20px', border: '2px solid #e5e7eb', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
-          <span style={{ color: GRAY_500, fontSize: '14px' }}>Loading...</span>
+          <div style={{ width: '20px', height: '20px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: WHITE, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
         </div>
       </div>
     );
@@ -172,7 +394,7 @@ export default function Board() {
       <header style={styles.header}>
         <div style={styles.headerContent}>
           <h1 style={styles.title}>TicTac</h1>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={styles.controlsRow}>
             <div style={styles.searchBox}>
               <MagnifyingGlassIcon style={styles.searchIcon} />
               <input
@@ -181,16 +403,55 @@ export default function Board() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={styles.searchInput}
+                onFocus={(e) => Object.assign(e.currentTarget.style, styles.searchInputFocus)}
+                onBlur={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900, borderColor: 'transparent' })}
               />
             </div>
+
+            {filterTag && (
+              <div style={styles.tagFilterContainer}>
+                <span style={styles.tagBadge}>
+                  <span style={{ background: tags.find(t => t.id === filterTag)?.color || GRAY_600, padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>
+                    {tags.find(t => t.id === filterTag)?.name}
+                  </span>
+                  <XMarkIcon
+                    style={{ width: '14px', height: '14px', ...styles.tagBadgeRemove }}
+                    onClick={() => setFilterTag(null)}
+                    onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.tagBadgeRemoveHover)}
+                    onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}
+                  />
+                </span>
+              </div>
+            )}
+
+            <button
+              onClick={() => setView(view === "board" ? "list" : "board")}
+              style={{ ...styles.iconButton, ...(view === "board" ? styles.iconButtonActive : {}) }}
+              onMouseEnter={(e) => view !== "board" && Object.assign(e.currentTarget.style, styles.iconButtonHover)}
+              onMouseLeave={(e) => Object.assign(e.currentTarget.style, view === "board" ? styles.iconButtonActive : { backgroundColor: GRAY_900, borderColor: 'rgba(255, 255, 255, 0.08)', transform: 'none' })}
+              title="Toggle view"
+            >
+              {view === "board" ? <Squares2X2Icon style={{ width: '18px', height: '18px' }} /> : <ListBulletIcon style={{ width: '18px', height: '18px' }} />}
+            </button>
+
+            <button
+              style={styles.iconButton}
+              onClick={() => setFilterTag(null)}
+              onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.iconButtonHover)}
+              onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900, borderColor: 'rgba(255, 255, 255, 0.08)', transform: 'none' })}
+              title="Filter by tag"
+            >
+              <TagIcon style={{ width: '18px', height: '18px' }} />
+            </button>
+
             <button
               onClick={() => signOut({ callbackUrl: "/auth/signin" })}
-              style={styles.button}
-              onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.buttonHover)}
-              onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: WHITE, borderColor: GRAY_200 })}
+              style={styles.iconButton}
+              onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.iconButtonHover)}
+              onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900, borderColor: 'rgba(255, 255, 255, 0.08)', transform: 'none' })}
+              title="Sign out"
             >
-              <ArrowRightOnRectangleIcon style={{ width: '16px', height: '16px' }} />
-              Sign out
+              <ArrowRightOnRectangleIcon style={{ width: '18px', height: '18px' }} />
             </button>
           </div>
         </div>
@@ -198,42 +459,38 @@ export default function Board() {
 
       <main style={styles.main}>
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div style={styles.boardGrid}>
-            {STATUSES.map((status) => (
-              <Column
-                key={status.value}
-                status={status.value}
-                label={status.label}
-                tasks={tasksByStatus[status.value]}
-                availableTags={tags}
-                isAdding={addingToColumn === status.value}
-                onAddStart={() => setAddingToColumn(status.value)}
-                onAddCancel={() => setAddingToColumn(null)}
-                onCreateTask={(data) => handleCreateTask(status.value, data)}
-              />
-            ))}
-          </div>
-
-          <DragOverlay>
-            {activeTask && (
-              <div style={{ opacity: 0.8, transform: 'rotate(1deg)', width: '284px' }}>
-                <TaskCard task={activeTask} availableTags={tags} onUpdate={() => {}} onDelete={() => {}} />
-              </div>
-            )}
-          </DragOverlay>
+          {view === "board" ? (
+            <div style={styles.boardGrid}>
+              {STATUSES.map((status) => (
+                <Column
+                  key={status.value}
+                  status={status.value}
+                  label={status.label}
+                  tasks={tasksByStatus[status.value]}
+                  availableTags={tags}
+                  isAdding={addingToColumn === status.value}
+                  onAddStart={() => setAddingToColumn(status.value)}
+                  onAddCancel={() => setAddingToColumn(null)}
+                  onCreateTask={(data) => handleCreateTask(status.value, data)}
+                />
+              ))}
+            </div>
+          ) : (
+            <ListView tasks={filteredTasks} tags={tags} onUpdate={async (id, data) => { await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); }} onDelete={async (id) => { await fetch(`/api/tasks/${id}`, { method: "DELETE" }); }} />
+          )}
         </DndContext>
       </main>
 
       <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
     </div>
   );
 }
 
-// Column Component with Clean Inline Task Creation
+// Column Component
 function Column({
   status,
   label,
@@ -257,7 +514,12 @@ function Column({
   const taskIds = tasks.map(t => t.id.toString());
 
   return (
-    <div ref={setNodeRef} style={styles.column}>
+    <div
+      ref={setNodeRef}
+      style={styles.column}
+      onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.columnHover)}
+      onMouseLeave={(e) => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255, 255, 255, 0.06)' })}
+    >
       <div style={styles.columnHeader}>
         <span style={styles.columnTitle}>{label}</span>
         <span style={styles.taskCount}>{tasks.length}</span>
@@ -288,32 +550,21 @@ function Column({
         {isAdding ? (
           <InlineTaskCreate availableTags={availableTags} onSave={onCreateTask} onCancel={onAddCancel} />
         ) : (
-          <button
+          <div
             onClick={onAddStart}
-            style={{
-              width: '100%',
-              padding: '10px',
-              border: `1px dashed ${GRAY_300}`,
-              backgroundColor: 'transparent',
-              color: GRAY_400,
-              fontSize: '13px',
-              cursor: 'pointer',
-              fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-              borderRadius: '8px',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={(e) => Object.assign(e.currentTarget.style, { borderColor: GRAY_400, color: GRAY_600, backgroundColor: GRAY_50 })}
-            onMouseLeave={(e) => Object.assign(e.currentTarget.style, { borderColor: GRAY_300, color: GRAY_400, backgroundColor: 'transparent' })}
+            style={styles.newTaskPlaceholder}
+            onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.newTaskPlaceholderHover)}
+            onMouseLeave={(e) => Object.assign(e.currentTarget.style, { borderColor: 'transparent', color: GRAY_500 })}
           >
             + New task
-          </button>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-// Clean Inline Task Creation
+// Inline Task Creation - No submit button, saves on enter or click outside
 function InlineTaskCreate({
   availableTags,
   onSave,
@@ -325,18 +576,33 @@ function InlineTaskCreate({
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    titleRef.current?.focus();
   }, []);
 
-  const handleSubmit = () => {
-    if (!title.trim() || isSubmitting) return;
-    setIsSubmitting(true);
-    onSave({ title: title.trim(), description: description.trim(), tags: [] });
-  };
+  const handleSubmit = useCallback(() => {
+    if (title.trim()) {
+      onSave({ title: title.trim(), description: description.trim(), tags: [] });
+    }
+  }, [title, description, onSave]);
+
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (title.trim()) {
+        handleSubmit();
+      } else {
+        onCancel();
+      }
+    }
+  }, [title, handleSubmit, onCancel]);
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside as any);
+    return () => document.removeEventListener('mousedown', handleClickOutside as any);
+  }, [handleClickOutside]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -344,90 +610,37 @@ function InlineTaskCreate({
       handleSubmit();
     } else if (e.key === 'Escape') {
       onCancel();
+    } else if (e.key === 'Tab' && !e.shiftKey && title.trim() && !description) {
+      e.preventDefault();
+      // Focus description
     }
   };
 
   return (
-    <div style={styles.addTaskInline}>
+    <div ref={containerRef} style={{ padding: '12px', animation: 'slideIn 0.2s ease-out' }}>
       <input
-        ref={inputRef}
+        ref={titleRef}
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="Task title"
-        style={{
-          width: '100%',
-          padding: '8px 10px',
-          backgroundColor: 'transparent',
-          border: 'none',
-          borderBottom: `1px solid ${GRAY_200}`,
-          fontSize: '14px',
-          color: GRAY_900,
-          fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-          outline: 'none',
-          marginBottom: '8px',
-        }}
+        placeholder="Task title..."
+        style={styles.inlineInput}
         onKeyDown={handleKeyDown}
+        onFocus={(e) => Object.assign(e.currentTarget.style, styles.inlineInputFocus)}
+        onBlur={(e) => Object.assign(e.currentTarget.style, { borderBottomColor: 'rgba(255, 255, 255, 0.15)' })}
       />
       <input
         type="text"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder="Add a description..."
-        style={{
-          width: '100%',
-          padding: '8px 0',
-          backgroundColor: 'transparent',
-          border: 'none',
-          borderBottom: `1px solid ${GRAY_200}`,
-          fontSize: '13px',
-          color: GRAY_600,
-          fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-          outline: 'none',
-          marginBottom: '12px',
-        }}
+        placeholder="Add description (optional)..."
+        style={{ ...styles.inlineInput, fontSize: '13px', color: GRAY_400 }}
         onKeyDown={handleKeyDown}
+        onFocus={(e) => Object.assign(e.currentTarget.style, styles.inlineInputFocus)}
+        onBlur={(e) => Object.assign(e.currentTarget.style, { borderBottomColor: 'rgba(255, 255, 255, 0.15)' })}
       />
-      <div style={{ display: 'flex', gap: '6px' }}>
-        <button
-          type="button"
-          onClick={onCancel}
-          style={{
-            padding: '6px 12px',
-            backgroundColor: 'transparent',
-            color: GRAY_500,
-            border: 'none',
-            fontSize: '13px',
-            cursor: 'pointer',
-            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-            borderRadius: '6px',
-          }}
-          onMouseEnter={(e) => Object.assign(e.currentTarget.style, { color: GRAY_700, backgroundColor: GRAY_100 })}
-          onMouseLeave={(e) => Object.assign(e.currentTarget.style, { color: GRAY_500, backgroundColor: 'transparent' })}
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!title.trim() || isSubmitting}
-          style={{
-            padding: '6px 12px',
-            backgroundColor: BLUE_500,
-            color: WHITE,
-            border: 'none',
-            fontSize: '13px',
-            fontWeight: 500,
-            cursor: 'pointer',
-            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-            borderRadius: '6px',
-            opacity: (!title.trim() || isSubmitting) ? 0.5 : 1,
-          }}
-          onMouseEnter={(e) => (title.trim() && !isSubmitting) && Object.assign(e.currentTarget.style, { backgroundColor: '#2563eb' })}
-          onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: BLUE_500 })}
-        >
-          {isSubmitting ? "Adding..." : "Add"}
-        </button>
+      <div style={{ fontSize: '11px', color: GRAY_500, marginTop: '8px' }}>
+        Enter to save · Esc to cancel
       </div>
     </div>
   );
@@ -463,6 +676,47 @@ function SortableTaskCard({
   return (
     <div ref={setNodeRef} style={style}>
       <TaskCard task={task} availableTags={availableTags} onUpdate={onUpdate} onDelete={onDelete} dragAttributes={attributes} dragListeners={listeners} />
+    </div>
+  );
+}
+
+// List View Component
+function ListView({
+  tasks,
+  tags,
+  onUpdate,
+  onDelete,
+}: {
+  tasks: Task[];
+  tags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+  onUpdate: (id: number, data: { title: string; description: string; status: TaskStatus; tags: string[] }) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
+}) {
+  const groupedTasks = [
+    { label: "To Do", tasks: tasks.filter(t => t.status === "not_started") },
+    { label: "In Progress", tasks: tasks.filter(t => t.status === "in_progress") },
+    { label: "Done", tasks: tasks.filter(t => t.status === "complete") },
+  ].filter(g => g.tasks.length > 0);
+
+  return (
+    <div style={styles.listView}>
+      {groupedTasks.map(group => (
+        <div key={group.label} style={styles.listGroup}>
+          <div style={styles.listGroupHeader}>{group.label} · {group.tasks.length}</div>
+          {group.tasks.map(task => (
+            <div
+              key={task.id}
+              style={styles.listRow}
+              onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.listRowHover)}
+              onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900, borderColor: 'transparent' })}
+              onClick={() => {/* Handle edit */}}
+            >
+              <span style={styles.listRowTitle}>{task.title}</span>
+              <span style={styles.listRowStatus}>{group.label}</span>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
