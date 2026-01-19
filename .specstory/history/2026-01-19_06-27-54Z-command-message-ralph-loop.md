@@ -68309,3 +68309,2262 @@ Build to verify success
 ƒ  (Dynamic)  server-rendered on demand
 ```
 </details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:30:45.014Z)**_
+
+Build succeeded! Now let me commit and push the changes:
+
+_**Agent (glm-4.7 2026-01-19T17:30:45.073Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stage all changes
+
+`git add -A && git status --short`
+```
+A  .claude/ralph-loop.local.md
+M  .specstory/history/2026-01-19_06-27-54Z-command-message-ralph-loop.md
+M  app/auth/signin/page.tsx
+M  app/auth/signup/page.tsx
+M  app/globals.css
+M  app/layout.tsx
+M  components/Board.tsx
+M  components/TaskCard.tsx
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:30:47.591Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit and push changes
+
+```bash
+git commit -m "$(cat <<'EOF'
+Bold dark theme with improved inline interactions
+
+- Implemented bold grey-to-black color scheme
+- Redesigned inline editing: borderless placeholders, no submit button
+- Enter or click outside to save, Esc to dismiss
+- Added slick smooth animations (cubic-bezier easing)
+- Restored view toggle (board/list) and tag filter
+- Clean dark aesthetic with minimal borders
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+EOF
+)" && git push
+```
+```
+[main 16afa4b] Bold dark theme with improved inline interactions
+ Committer: Ankur Kakroo <ankur@Ankur-Kakroo.local>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
+
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 8 files changed, 5477 insertions(+), 553 deletions(-)
+ create mode 100644 .claude/ralph-loop.local.md
+To https://github.com/ankurkakroo2/my-trello.git
+   08cbe2e..16afa4b  main -> main
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:30:53.275Z)**_
+
+DONE
+
+**Summary of changes:**
+
+1. **Bold grey-to-black color scheme** - Pure black (#000000) background with dark grey cards (#171717), clean white text
+
+2. **Improved inline edit** - 
+   - Borderless inputs with just bottom line indicators
+   - No submit button - Enter or click outside saves
+   - Esc dismisses/cancels
+   - Placeholder text instead of visible borders
+
+3. **Slick animations** - 
+   - Cubic-bezier easing for smooth transitions
+   - Hover effects with subtle lift and glow
+   - Fade-in and slide-in animations for new elements
+
+4. **Restored features** -
+   - View toggle (board/list) in header
+   - Tag filtering with badge display
+   - Search functionality
+
+5. **Clean aesthetic** - Minimal borders, subtle shadows, glassmorphism header
+
+---
+
+_**User (2026-01-19T17:30:53.950Z)**_
+
+Stop hook feedback:
+
+I want a better overall look. it needs to look bold but also very clean. Shades of grey -> black. Animations need to be slick and smooth. the inline edit is still not good. too many text boxes. when you create a tile, just show placeholders without borders. no submit button. Enter or a click outside saves it. Esc dismisses. Also looks like you removed the filters and Layout change. bring it back. One done print DONE --completion-text=DONE
+
+---
+
+_**Agent (glm-4.7 2026-01-19T17:30:58.233Z)**_
+
+Looking at the feedback, I need to further refine the inline edit - it still has too many text boxes visible. Let me make it even more minimal - just placeholders that appear as you type.
+
+_**Agent (glm-4.7 2026-01-19T17:30:58.294Z)**_
+
+<tool-use data-tool-type="task" data-tool-name="TodoWrite"><details>
+<summary>Tool use: **TodoWrite**</summary>
+**Agent task list:**
+- [⚡] 🌡️ Simplify inline edit - single placeholder, no visible boxes
+- [ ] 🌡️ Verify filters and layout toggle are working
+
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:31:50.775Z)**_
+
+The issue is that when creating/editing, you see both title and description inputs at once. Let me change it to a progressive reveal - only show the description input after you've typed a title, and make everything look like placeholder text until focused:
+
+_**Agent (glm-4.7 2026-01-19T17:31:50.846Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```tsx
+"use client";
+
+import { useEffect, useState, useCallback, useRef, MouseEvent } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+  useDroppable,
+} from "@dnd-kit/core";
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import TaskCard from "./TaskCard";
+import { Task, TaskStatus } from "@/lib/types";
+import { fetchWithRetry } from "@/lib/utils";
+import { signOut } from "next-auth/react";
+import {
+  Squares2X2Icon,
+  ListBulletIcon,
+  MagnifyingGlassIcon,
+  TagIcon,
+  XMarkIcon,
+  ChevronDownIcon,
+} from "@heroicons/react/24/outline";
+
+const STATUSES: { value: TaskStatus; label: string }[] = [
+  { value: "not_started", label: "To Do" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "complete", label: "Done" },
+];
+
+// Bold dark theme
+const BLACK = "#000000";
+const GRAY_900 = "#0a0a0a";
+const GRAY_800 = "#171717";
+const GRAY_700 = "#262626";
+const GRAY_600 = "#404040";
+const GRAY_500 = "#525252";
+const GRAY_400 = "#737373";
+const GRAY_300 = "#a3a3a3";
+const WHITE = "#ffffff";
+
+const styles = {
+  page: {
+    minHeight: '100vh',
+    backgroundColor: BLACK,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", sans-serif',
+    color: WHITE,
+  },
+  header: {
+    position: 'sticky' as const,
+    top: 0,
+    zIndex: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backdropFilter: 'blur(20px)',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+    padding: '14px 20px',
+  },
+  headerContent: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: '16px',
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+  },
+  controls: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
+  },
+  searchBox: {
+    position: 'relative' as const,
+    display: 'flex',
+    alignItems: 'center',
+  },
+  searchInput: {
+    width: '180px',
+    padding: '8px 10px 8px 32px',
+    backgroundColor: GRAY_900,
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '13px',
+    color: WHITE,
+    outline: 'none',
+  },
+  searchInputFocus: {
+    backgroundColor: GRAY_800,
+  },
+  searchIcon: {
+    position: 'absolute' as const,
+    left: '10px',
+    color: GRAY_500,
+    width: '14px',
+    height: '14px',
+    pointerEvents: 'none' as const,
+  },
+  iconBtn: {
+    padding: '8px',
+    backgroundColor: 'transparent',
+    color: GRAY_500,
+    cursor: 'pointer',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: 'none',
+  },
+  iconBtnHover: {
+    backgroundColor: GRAY_900,
+    color: WHITE,
+  },
+  iconBtnActive: {
+    backgroundColor: GRAY_800,
+    color: WHITE,
+  },
+  dropdown: {
+    position: 'relative' as const,
+  },
+  dropdownMenu: {
+    position: 'absolute' as const,
+    top: '100%',
+    right: 0,
+    marginTop: '8px',
+    backgroundColor: GRAY_800,
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '10px',
+    padding: '8px',
+    minWidth: '160px',
+    zIndex: 50,
+  },
+  dropdownItem: {
+    padding: '8px 12px',
+    fontSize: '13px',
+    color: GRAY_300,
+    cursor: 'pointer',
+    borderRadius: '6px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  dropdownItemHover: {
+    backgroundColor: GRAY_700,
+    color: WHITE,
+  },
+  main: {
+    padding: '20px',
+    maxWidth: '1400px',
+    margin: '0 auto',
+  },
+  boardGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '16px',
+  },
+  column: {
+    backgroundColor: 'transparent',
+    borderRadius: '12px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    minHeight: '400px',
+  },
+  columnHeader: {
+    padding: '12px 8px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  columnTitle: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: GRAY_500,
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase' as const,
+  },
+  taskCount: {
+    fontSize: '11px',
+    color: GRAY_600,
+  },
+  columnContent: {
+    padding: '4px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '4px',
+  },
+  loading: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+  },
+  // Minimal input styles
+  minimalInput: {
+    width: '100%',
+    padding: '10px 12px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    fontSize: '14px',
+    color: WHITE,
+    outline: 'none',
+    fontFamily: 'inherit',
+  },
+  minimalInputPlaceholder: {
+    color: GRAY_600,
+  },
+  // List view
+  listView: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '2px',
+  },
+  listRow: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '12px 16px',
+    backgroundColor: GRAY_900,
+    borderRadius: '8px',
+    transition: 'background-color 0.15s',
+  },
+  listRowHover: {
+    backgroundColor: GRAY_800,
+  },
+  listTitle: {
+    flex: 1,
+    fontSize: '14px',
+    color: GRAY_200,
+  },
+  listStatus: {
+    fontSize: '11px',
+    padding: '3px 8px',
+    backgroundColor: GRAY_800,
+    color: GRAY_500,
+    borderRadius: '4px',
+  },
+  tagFilter: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '4px 8px 4px 4px',
+    backgroundColor: GRAY_800,
+    borderRadius: '6px',
+    fontSize: '12px',
+  },
+  tagFilterText: {
+    padding: '2px 6px',
+    borderRadius: '4px',
+    fontSize: '11px',
+  },
+};
+
+export default function Board() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tags, setTags] = useState<Array<{ id: number; name: string; color: string; taskCount: number }>>([]);
+  const [view, setView] = useState<"board" | "list">("board");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterTag, setFilterTag] = useState<number | null>(null);
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [addingToColumn, setAddingToColumn] = useState<TaskStatus | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (filterTag) params.append("tagId", filterTag.toString());
+      const response = await fetchWithRetry(`/api/tasks?${params}`);
+      if (response.ok) setTasks(await response.json());
+    } finally {
+      setIsLoading(false);
+    }
+  }, [filterTag]);
+
+  const fetchTags = async () => {
+    try {
+      const response = await fetchWithRetry("/api/tags");
+      if (response.ok) setTags(await response.json());
+    } catch {}
+  };
+
+  useEffect(() => { fetchTasks(); fetchTags(); }, [fetchTasks]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setShowFilterDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside as any);
+    return () => document.removeEventListener('mousedown', handleClickOutside as any);
+  }, []);
+
+  const filteredTasks = tasks.filter(t =>
+    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const tasksByStatus: Record<TaskStatus, Task[]> = {
+    not_started: filteredTasks.filter(t => t.status === "not_started"),
+    in_progress: filteredTasks.filter(t => t.status === "in_progress"),
+    complete: filteredTasks.filter(t => t.status === "complete"),
+  };
+
+  const handleDragStart = (event: DragStartEvent) => setActiveId(parseInt(event.active.id as string));
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = parseInt(active.id as string);
+    const activeTask = tasks.find(t => t.id === activeId);
+    if (!activeTask) return;
+
+    const overStatus = over?.data?.current?.status as TaskStatus | undefined;
+    const newStatus = overStatus || activeTask.status;
+
+    const updatedTasks = tasks.map(t => t.id === activeId ? { ...t, status: newStatus } : t);
+    setTasks(updatedTasks);
+
+    try {
+      await fetchWithRetry(`/api/tasks/${activeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...activeTask, status: newStatus, title: activeTask.title, description: activeTask.description || "", tags: activeTask.tags.map(t => t.name) }),
+      });
+    } catch {
+      fetchTasks();
+    }
+  };
+
+  const handleCreateTask = async (status: TaskStatus, data: { title: string; description: string; tags: string[] }) => {
+    try {
+      const response = await fetchWithRetry("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, status }),
+      });
+      if (!response.ok) throw new Error("Failed to create");
+      const newTask = await response.json();
+      setTasks(prev => [...prev, newTask]);
+      setAddingToColumn(null);
+    } catch {}
+  };
+
+  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+
+  if (isLoading) {
+    return (
+      <div style={styles.loading}>
+        <div style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: WHITE, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.page}>
+      <header style={styles.header}>
+        <div style={styles.headerContent}>
+          <h1 style={styles.title}>TicTac</h1>
+          <div style={styles.controls}>
+            <div style={styles.searchBox}>
+              <MagnifyingGlassIcon style={styles.searchIcon} />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={styles.searchInput}
+                onFocus={(e) => Object.assign(e.currentTarget.style, styles.searchInputFocus)}
+                onBlur={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}
+              />
+            </div>
+
+            {filterTag && (
+              <div style={styles.tagFilter}>
+                <span style={{ ...styles.tagFilterText, background: tags.find(t => t.id === filterTag)?.color || GRAY_600 }}>
+                  {tags.find(t => t.id === filterTag)?.name}
+                </span>
+                <XMarkIcon
+                  style={{ width: '14px', height: '14px', cursor: 'pointer', color: GRAY_400 }}
+                  onClick={() => setFilterTag(null)}
+                />
+              </div>
+            )}
+
+            <button
+              onClick={() => setView(view === "board" ? "list" : "board")}
+              style={{ ...styles.iconBtn, ...(view === "board" ? styles.iconBtnActive : {}) }}
+              onMouseEnter={(e) => view !== "board" && Object.assign(e.currentTarget.style, styles.iconBtnHover)}
+              onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_500 })}
+              title="Toggle view"
+            >
+              {view === "board" ? <Squares2X2Icon style={{ width: '18px', height: '18px' }} /> : <ListBulletIcon style={{ width: '18px', height: '18px' }} />}
+            </button>
+
+            <div ref={filterRef} style={styles.dropdown}>
+              <button
+                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                style={{ ...styles.iconBtn, ...(showFilterDropdown ? styles.iconBtnActive : {}) }}
+                onMouseEnter={(e) => !showFilterDropdown && Object.assign(e.currentTarget.style, styles.iconBtnHover)}
+                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_500 })}
+              >
+                <TagIcon style={{ width: '18px', height: '18px' }} />
+              </button>
+              {showFilterDropdown && (
+                <div style={styles.dropdownMenu}>
+                  {tags.map(tag => (
+                    <div
+                      key={tag.id}
+                      onClick={() => { setFilterTag(tag.id); setShowFilterDropdown(false); }}
+                      style={styles.dropdownItem}
+                      onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.dropdownItemHover)}
+                      onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_300 })}
+                    >
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: tag.color }}></span>
+                      {tag.name}
+                    </div>
+                  ))}
+                  {tags.length === 0 && (
+                    <div style={{ ...styles.dropdownItem, color: GRAY_500, cursor: 'default' }}>No tags</div>
+                  )}
+                  {filterTag && (
+                    <div
+                      onClick={() => setFilterTag(null)}
+                      style={{ ...styles.dropdownItem, borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '4px', paddingTop: '12px' }}
+                      onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.dropdownItemHover)}
+                      onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_300 })}
+                    >
+                      Clear filter
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+              style={styles.iconBtn}
+              onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.iconBtnHover)}
+              onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_500 })}
+            >
+              <ArrowRightOnRectangleIcon style={{ width: '18px', height: '18px' }} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main style={styles.main}>
+        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          {view === "board" ? (
+            <div style={styles.boardGrid}>
+              {STATUSES.map((status) => (
+                <Column
+                  key={status.value}
+                  status={status.value}
+                  label={status.label}
+                  tasks={tasksByStatus[status.value]}
+                  availableTags={tags}
+                  isAdding={addingToColumn === status.value}
+                  onAddStart={() => setAddingToColumn(status.value)}
+                  onAddCancel={() => setAddingToColumn(null)}
+                  onCreateTask={(data) => handleCreateTask(status.value, data)}
+                />
+              ))}
+            </div>
+          ) : (
+            <ListView tasks={filteredTasks} tags={tags} />
+          )}
+        </DndContext>
+      </main>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+// Column Component
+function Column({
+  status,
+  label,
+  tasks,
+  availableTags,
+  isAdding,
+  onAddStart,
+  onAddCancel,
+  onCreateTask,
+}: {
+  status: TaskStatus;
+  label: string;
+  tasks: Task[];
+  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+  isAdding: boolean;
+  onAddStart: () => void;
+  onAddCancel: () => void;
+  onCreateTask: (data: { title: string; description: string; tags: string[] }) => void;
+}) {
+  const { setNodeRef } = useDroppable({ id: status, data: { status } });
+  const taskIds = tasks.map(t => t.id.toString());
+
+  return (
+    <div ref={setNodeRef} style={styles.column}>
+      <div style={styles.columnHeader}>
+        <span style={styles.columnTitle}>{label}</span>
+        <span style={styles.taskCount}>{tasks.length}</span>
+      </div>
+
+      <div style={styles.columnContent}>
+        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+          {tasks.map(task => (
+            <SortableTaskCard
+              key={task.id}
+              task={task}
+              availableTags={availableTags}
+              onUpdate={async (id, data) => {
+                await fetch(`/api/tasks/${id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(data),
+                });
+              }}
+              onDelete={async (id) => {
+                await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+                window.location.reload();
+              }}
+            />
+          ))}
+        </SortableContext>
+
+        {isAdding ? (
+          <MinimalTaskCreate onSave={onCreateTask} onCancel={onAddCancel} />
+        ) : (
+          <div
+            onClick={onAddStart}
+            style={{
+              padding: '10px 12px',
+              color: GRAY_600,
+              fontSize: '13px',
+              cursor: 'text',
+              borderRadius: '8px',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900, color: GRAY_500 })}
+            onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_600 })}
+          >
+            + Add task...
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// MINIMAL Task Creation - Single input, reveals description only after title
+function MinimalTaskCreate({
+  onSave,
+  onCancel,
+}: {
+  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+  onSave: (data: { title: string; description: string; tags: string[] }) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [showDescription, setShowDescription] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    titleInputRef.current?.focus();
+  }, []);
+
+  const handleSubmit = useCallback(() => {
+    if (title.trim()) {
+      onSave({ title: title.trim(), description: description.trim(), tags: [] });
+    }
+  }, [title, description, onSave]);
+
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (title.trim()) {
+        handleSubmit();
+      } else {
+        onCancel();
+      }
+    }
+  }, [title, handleSubmit, onCancel]);
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside as any);
+    return () => document.removeEventListener('mousedown', handleClickOutside as any);
+  }, [handleClickOutside]);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value);
+    if (e.target.value && !showDescription) {
+      setShowDescription(true);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    } else if (e.key === 'Escape') {
+      onCancel();
+    }
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        padding: '8px 0',
+        animation: 'fadeIn 0.15s ease-out',
+      }}
+    >
+      <input
+        ref={titleInputRef}
+        type="text"
+        value={title}
+        onChange={handleTitleChange}
+        placeholder="Task name..."
+        style={{
+          ...styles.minimalInput,
+          ...(title ? {} : styles.minimalInputPlaceholder),
+        }}
+        onKeyDown={handleKeyDown}
+      />
+      {showDescription && (
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Add description..."
+          style={{
+            ...styles.minimalInput,
+            fontSize: '13px',
+            marginTop: '4px',
+            ...(description ? {} : { color: GRAY_600 }),
+          }}
+          onKeyDown={handleKeyDown}
+          onFocus={(e) => Object.assign(e.currentTarget.style, { color: WHITE })}
+          onBlur={(e) => !description && Object.assign(e.currentTarget.style, { color: GRAY_600 })}
+        />
+      )}
+    </div>
+  );
+}
+
+// Sortable Task Card Wrapper
+function SortableTaskCard({
+  task,
+  availableTags,
+  onUpdate,
+  onDelete,
+}: {
+  task: Task;
+  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+  onUpdate: (id: number, data: { title: string; description: string; status: TaskStatus; tags: string[] }) => void;
+  onDelete: (id: number) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id.toString(), data: { status: task.status } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <TaskCard task={task} availableTags={availableTags} onUpdate={onUpdate} onDelete={onDelete} dragAttributes={attributes} dragListeners={listeners} />
+    </div>
+  );
+}
+
+// List View
+function ListView({
+  tasks,
+  tags,
+}: {
+  tasks: Task[];
+  tags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+}) {
+  const grouped = [
+    { label: "To Do", tasks: tasks.filter(t => t.status === "not_started") },
+    { label: "In Progress", tasks: tasks.filter(t => t.status === "in_progress") },
+    { label: "Done", tasks: tasks.filter(t => t.status === "complete") },
+  ].filter(g => g.tasks.length > 0);
+
+  return (
+    <div style={styles.listView}>
+      {grouped.map(group => (
+        <div key={group.label}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: GRAY_600, padding: '8px 16px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            {group.label} · {group.tasks.length}
+          </div>
+          {group.tasks.map(task => (
+            <div
+              key={task.id}
+              style={styles.listRow}
+              onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.listRowHover)}
+              onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}
+            >
+              <span style={styles.listTitle}>{task.title}</span>
+              <span style={styles.listStatus}>{group.label}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+```
+```
+The file /Users/ankur/D/Playground/my-trello/components/Board.tsx has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
+     1→"use client";
+     2→
+     3→import { useEffect, useState, useCallback, useRef, MouseEvent } from "react";
+     4→import {
+     5→  DndContext,
+     6→  DragEndEvent,
+     7→  DragOverlay,
+     8→  DragStartEvent,
+     9→  PointerSensor,
+    10→  useSensor,
+    11→  useSensors,
+    12→  closestCorners,
+    13→  useDroppable,
+    14→} from "@dnd-kit/core";
+    15→import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+    16→import { CSS } from "@dnd-kit/utilities";
+    17→import TaskCard from "./TaskCard";
+    18→import { Task, TaskStatus } from "@/lib/types";
+    19→import { fetchWithRetry } from "@/lib/utils";
+    20→import { signOut } from "next-auth/react";
+    21→import {
+    22→  Squares2X2Icon,
+    23→  ListBulletIcon,
+    24→  MagnifyingGlassIcon,
+    25→  TagIcon,
+    26→  XMarkIcon,
+    27→  ChevronDownIcon,
+    28→} from "@heroicons/react/24/outline";
+    29→
+    30→const STATUSES: { value: TaskStatus; label: string }[] = [
+    31→  { value: "not_started", label: "To Do" },
+    32→  { value: "in_progress", label: "In Progress" },
+    33→  { value: "complete", label: "Done" },
+    34→];
+    35→
+    36→// Bold dark theme
+    37→const BLACK = "#000000";
+    38→const GRAY_900 = "#0a0a0a";
+    39→const GRAY_800 = "#171717";
+    40→const GRAY_700 = "#262626";
+    41→const GRAY_600 = "#404040";
+    42→const GRAY_500 = "#525252";
+    43→const GRAY_400 = "#737373";
+    44→const GRAY_300 = "#a3a3a3";
+    45→const WHITE = "#ffffff";
+    46→
+    47→const styles = {
+    48→  page: {
+    49→    minHeight: '100vh',
+    50→    backgroundColor: BLACK,
+    51→    fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", sans-serif',
+    52→    color: WHITE,
+    53→  },
+    54→  header: {
+    55→    position: 'sticky' as const,
+    56→    top: 0,
+    57→    zIndex: 40,
+    58→    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    59→    backdropFilter: 'blur(20px)',
+    60→    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+    61→    padding: '14px 20px',
+    62→  },
+    63→  headerContent: {
+    64→    display: 'flex',
+    65→    justifyContent: 'space-between',
+    66→    alignItems: 'center',
+    67→  },
+    68→  title: {
+    69→    fontSize: '16px',
+    70→    fontWeight: 700,
+    71→    letterSpacing: '-0.02em',
+    72→  },
+    73→  controls: {
+    74→    display: 'flex',
+    75→    gap: '8px',
+    76→    alignItems: 'center',
+    77→  },
+    78→  searchBox: {
+    79→    position: 'relative' as const,
+    80→    display: 'flex',
+    81→    alignItems: 'center',
+    82→  },
+    83→  searchInput: {
+    84→    width: '180px',
+    85→    padding: '8px 10px 8px 32px',
+    86→    backgroundColor: GRAY_900,
+    87→    border: 'none',
+    88→    borderRadius: '8px',
+    89→    fontSize: '13px',
+    90→    color: WHITE,
+    91→    outline: 'none',
+    92→  },
+    93→  searchInputFocus: {
+    94→    backgroundColor: GRAY_800,
+    95→  },
+    96→  searchIcon: {
+    97→    position: 'absolute' as const,
+    98→    left: '10px',
+    99→    color: GRAY_500,
+   100→    width: '14px',
+   101→    height: '14px',
+   102→    pointerEvents: 'none' as const,
+   103→  },
+   104→  iconBtn: {
+   105→    padding: '8px',
+   106→    backgroundColor: 'transparent',
+   107→    color: GRAY_500,
+   108→    cursor: 'pointer',
+   109→    borderRadius: '8px',
+   110→    display: 'flex',
+   111→    alignItems: 'center',
+   112→    justifyContent: 'center',
+   113→    border: 'none',
+   114→  },
+   115→  iconBtnHover: {
+   116→    backgroundColor: GRAY_900,
+   117→    color: WHITE,
+   118→  },
+   119→  iconBtnActive: {
+   120→    backgroundColor: GRAY_800,
+   121→    color: WHITE,
+   122→  },
+   123→  dropdown: {
+   124→    position: 'relative' as const,
+   125→  },
+   126→  dropdownMenu: {
+   127→    position: 'absolute' as const,
+   128→    top: '100%',
+   129→    right: 0,
+   130→    marginTop: '8px',
+   131→    backgroundColor: GRAY_800,
+   132→    border: '1px solid rgba(255, 255, 255, 0.1)',
+   133→    borderRadius: '10px',
+   134→    padding: '8px',
+   135→    minWidth: '160px',
+   136→    zIndex: 50,
+   137→  },
+   138→  dropdownItem: {
+   139→    padding: '8px 12px',
+   140→    fontSize: '13px',
+   141→    color: GRAY_300,
+   142→    cursor: 'pointer',
+   143→    borderRadius: '6px',
+   144→    display: 'flex',
+   145→    alignItems: 'center',
+   146→    gap: '8px',
+   147→  },
+   148→  dropdownItemHover: {
+   149→    backgroundColor: GRAY_700,
+   150→    color: WHITE,
+   151→  },
+   152→  main: {
+   153→    padding: '20px',
+   154→    maxWidth: '1400px',
+   155→    margin: '0 auto',
+   156→  },
+   157→  boardGrid: {
+   158→    display: 'grid',
+   159→    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+   160→    gap: '16px',
+   161→  },
+   162→  column: {
+   163→    backgroundColor: 'transparent',
+   164→    borderRadius: '12px',
+   165→    display: 'flex',
+   166→    flexDirection: 'column' as const,
+   167→    minHeight: '400px',
+   168→  },
+   169→  columnHeader: {
+   170→    padding: '12px 8px',
+   171→    display: 'flex',
+   172→    justifyContent: 'space-between',
+   173→    alignItems: 'center',
+   174→  },
+   175→  columnTitle: {
+   176→    fontSize: '13px',
+   177→    fontWeight: 600,
+   178→    color: GRAY_500,
+   179→    letterSpacing: '0.05em',
+   180→    textTransform: 'uppercase' as const,
+   181→  },
+   182→  taskCount: {
+   183→    fontSize: '11px',
+   184→    color: GRAY_600,
+   185→  },
+   186→  columnContent: {
+   187→    padding: '4px',
+   188→    display: 'flex',
+   189→    flexDirection: 'column' as const,
+   190→    gap: '4px',
+   191→  },
+   192→  loading: {
+   193→    display: 'flex',
+   194→    alignItems: 'center',
+   195→    justifyContent: 'center',
+   196→    minHeight: '100vh',
+   197→  },
+   198→  // Minimal input styles
+   199→  minimalInput: {
+   200→    width: '100%',
+   201→    padding: '10px 12px',
+   202→    backgroundColor: 'transparent',
+   203→    border: 'none',
+   204→    fontSize: '14px',
+   205→    color: WHITE,
+   206→    outline: 'none',
+   207→    fontFamily: 'inherit',
+   208→  },
+   209→  minimalInputPlaceholder: {
+   210→    color: GRAY_600,
+   211→  },
+   212→  // List view
+   213→  listView: {
+   214→    display: 'flex',
+   215→    flexDirection: 'column' as const,
+   216→    gap: '2px',
+   217→  },
+   218→  listRow: {
+   219→    display: 'flex',
+   220→    alignItems: 'center',
+   221→    padding: '12px 16px',
+   222→    backgroundColor: GRAY_900,
+   223→    borderRadius: '8px',
+   224→    transition: 'background-color 0.15s',
+   225→  },
+   226→  listRowHover: {
+   227→    backgroundColor: GRAY_800,
+   228→  },
+   229→  listTitle: {
+   230→    flex: 1,
+   231→    fontSize: '14px',
+   232→    color: GRAY_200,
+   233→  },
+   234→  listStatus: {
+   235→    fontSize: '11px',
+   236→    padding: '3px 8px',
+   237→    backgroundColor: GRAY_800,
+   238→    color: GRAY_500,
+   239→    borderRadius: '4px',
+   240→  },
+   241→  tagFilter: {
+   242→    display: 'flex',
+   243→    alignItems: 'center',
+   244→    gap: '6px',
+   245→    padding: '4px 8px 4px 4px',
+   246→    backgroundColor: GRAY_800,
+   247→    borderRadius: '6px',
+   248→    fontSize: '12px',
+   249→  },
+   250→  tagFilterText: {
+   251→    padding: '2px 6px',
+   252→    borderRadius: '4px',
+   253→    fontSize: '11px',
+   254→  },
+   255→};
+   256→
+   257→export default function Board() {
+   258→  const [tasks, setTasks] = useState<Task[]>([]);
+   259→  const [tags, setTags] = useState<Array<{ id: number; name: string; color: string; taskCount: number }>>([]);
+   260→  const [view, setView] = useState<"board" | "list">("board");
+   261→  const [searchQuery, setSearchQuery] = useState("");
+   262→  const [filterTag, setFilterTag] = useState<number | null>(null);
+   263→  const [activeId, setActiveId] = useState<number | null>(null);
+   264→  const [addingToColumn, setAddingToColumn] = useState<TaskStatus | null>(null);
+   265→  const [isLoading, setIsLoading] = useState(true);
+   266→  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+   267→  const filterRef = useRef<HTMLDivElement>(null);
+   268→
+   269→  const sensors = useSensors(
+   270→    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+   271→  );
+   272→
+   273→  const fetchTasks = useCallback(async () => {
+   274→    try {
+   275→      const params = new URLSearchParams();
+   276→      if (filterTag) params.append("tagId", filterTag.toString());
+   277→      const response = await fetchWithRetry(`/api/tasks?${params}`);
+   278→      if (response.ok) setTasks(await response.json());
+   279→    } finally {
+   280→      setIsLoading(false);
+   281→    }
+   282→  }, [filterTag]);
+   283→
+   284→  const fetchTags = async () => {
+   285→    try {
+   286→      const response = await fetchWithRetry("/api/tags");
+   287→      if (response.ok) setTags(await response.json());
+   288→    } catch {}
+   289→  };
+   290→
+   291→  useEffect(() => { fetchTasks(); fetchTags(); }, [fetchTasks]);
+   292→
+   293→  // Close dropdown on click outside
+   294→  useEffect(() => {
+   295→    const handleClickOutside = (e: MouseEvent) => {
+   296→      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+   297→        setShowFilterDropdown(false);
+   298→      }
+   299→    };
+   300→    document.addEventListener('mousedown', handleClickOutside as any);
+   301→    return () => document.removeEventListener('mousedown', handleClickOutside as any);
+   302→  }, []);
+   303→
+   304→  const filteredTasks = tasks.filter(t =>
+   305→    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+   306→    (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()))
+   307→  );
+   308→
+   309→  const tasksByStatus: Record<TaskStatus, Task[]> = {
+   310→    not_started: filteredTasks.filter(t => t.status === "not_started"),
+   311→    in_progress: filteredTasks.filter(t => t.status === "in_progress"),
+   312→    complete: filteredTasks.filter(t => t.status === "complete"),
+   313→  };
+   314→
+   315→  const handleDragStart = (event: DragStartEvent) => setActiveId(parseInt(event.active.id as string));
+   316→  const handleDragEnd = async (event: DragEndEvent) => {
+   317→    setActiveId(null);
+   318→    const { active, over } = event;
+   319→    if (!over) return;
+   320→
+   321→    const activeId = parseInt(active.id as string);
+   322→    const activeTask = tasks.find(t => t.id === activeId);
+   323→    if (!activeTask) return;
+   324→
+   325→    const overStatus = over?.data?.current?.status as TaskStatus | undefined;
+   326→    const newStatus = overStatus || activeTask.status;
+   327→
+   328→    const updatedTasks = tasks.map(t => t.id === activeId ? { ...t, status: newStatus } : t);
+   329→    setTasks(updatedTasks);
+   330→
+   331→    try {
+   332→      await fetchWithRetry(`/api/tasks/${activeId}`, {
+   333→        method: "PATCH",
+   334→        headers: { "Content-Type": "application/json" },
+   335→        body: JSON.stringify({ ...activeTask, status: newStatus, title: activeTask.title, description: activeTask.description || "", tags: activeTask.tags.map(t => t.name) }),
+   336→      });
+   337→    } catch {
+   338→      fetchTasks();
+   339→    }
+   340→  };
+   341→
+   342→  const handleCreateTask = async (status: TaskStatus, data: { title: string; description: string; tags: string[] }) => {
+   343→    try {
+   344→      const response = await fetchWithRetry("/api/tasks", {
+   345→        method: "POST",
+   346→        headers: { "Content-Type": "application/json" },
+   347→        body: JSON.stringify({ ...data, status }),
+   348→      });
+   349→      if (!response.ok) throw new Error("Failed to create");
+   350→      const newTask = await response.json();
+   351→      setTasks(prev => [...prev, newTask]);
+   352→      setAddingToColumn(null);
+   353→    } catch {}
+   354→  };
+   355→
+   356→  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+   357→
+   358→  if (isLoading) {
+   359→    return (
+   360→      <div style={styles.loading}>
+   361→        <div style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: WHITE, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+   362→      </div>
+   363→    );
+   364→  }
+   365→
+   366→  return (
+   367→    <div style={styles.page}>
+   368→      <header style={styles.header}>
+   369→        <div style={styles.headerContent}>
+   370→          <h1 style={styles.title}>TicTac</h1>
+   371→          <div style={styles.controls}>
+   372→            <div style={styles.searchBox}>
+   373→              <MagnifyingGlassIcon style={styles.searchIcon} />
+   374→              <input
+   375→                type="text"
+   376→                placeholder="Search..."
+   377→                value={searchQuery}
+   378→                onChange={(e) => setSearchQuery(e.target.value)}
+   379→                style={styles.searchInput}
+   380→                onFocus={(e) => Object.assign(e.currentTarget.style, styles.searchInputFocus)}
+   381→                onBlur={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}
+   382→              />
+   383→            </div>
+   384→
+   385→            {filterTag && (
+   386→              <div style={styles.tagFilter}>
+   387→                <span style={{ ...styles.tagFilterText, background: tags.find(t => t.id === filterTag)?.color || GRAY_600 }}>
+   388→                  {tags.find(t => t.id === filterTag)?.name}
+   389→                </span>
+   390→                <XMarkIcon
+   391→                  style={{ width: '14px', height: '14px', cursor: 'pointer', color: GRAY_400 }}
+   392→                  onClick={() => setFilterTag(null)}
+   393→                />
+   394→              </div>
+   395→            )}
+   396→
+   397→            <button
+   398→              onClick={() => setView(view === "board" ? "list" : "board")}
+   399→              style={{ ...styles.iconBtn, ...(view === "board" ? styles.iconBtnActive : {}) }}
+   400→              onMouseEnter={(e) => view !== "board" && Object.assign(e.currentTarget.style, styles.iconBtnHover)}
+   401→              onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_500 })}
+   402→              title="Toggle view"
+   403→            >
+   404→              {view === "board" ? <Squares2X2Icon style={{ width: '18px', height: '18px' }} /> : <ListBulletIcon style={{ width: '18px', height: '18px' }} />}
+   405→            </button>
+   406→
+   407→            <div ref={filterRef} style={styles.dropdown}>
+   408→              <button
+   409→                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+   410→                style={{ ...styles.iconBtn, ...(showFilterDropdown ? styles.iconBtnActive : {}) }}
+   411→                onMouseEnter={(e) => !showFilterDropdown && Object.assign(e.currentTarget.style, styles.iconBtnHover)}
+   412→                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_500 })}
+   413→              >
+   414→                <TagIcon style={{ width: '18px', height: '18px' }} />
+   415→              </button>
+   416→              {showFilterDropdown && (
+   417→                <div style={styles.dropdownMenu}>
+   418→                  {tags.map(tag => (
+   419→                    <div
+   420→                      key={tag.id}
+   421→                      onClick={() => { setFilterTag(tag.id); setShowFilterDropdown(false); }}
+   422→                      style={styles.dropdownItem}
+   423→                      onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.dropdownItemHover)}
+   424→                      onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_300 })}
+   425→                    >
+   426→                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: tag.color }}></span>
+   427→                      {tag.name}
+   428→                    </div>
+   429→                  ))}
+   430→                  {tags.length === 0 && (
+   431→                    <div style={{ ...styles.dropdownItem, color: GRAY_500, cursor: 'default' }}>No tags</div>
+   432→                  )}
+   433→                  {filterTag && (
+   434→                    <div
+   435→                      onClick={() => setFilterTag(null)}
+   436→                      style={{ ...styles.dropdownItem, borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '4px', paddingTop: '12px' }}
+   437→                      onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.dropdownItemHover)}
+   438→                      onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_300 })}
+   439→                    >
+   440→                      Clear filter
+   441→                    </div>
+   442→                  )}
+   443→                </div>
+   444→              )}
+   445→            </div>
+   446→
+   447→            <button
+   448→              onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+   449→              style={styles.iconBtn}
+   450→              onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.iconBtnHover)}
+   451→              onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_500 })}
+   452→            >
+   453→              <ArrowRightOnRectangleIcon style={{ width: '18px', height: '18px' }} />
+   454→            </button>
+   455→          </div>
+   456→        </div>
+   457→      </header>
+   458→
+   459→      <main style={styles.main}>
+   460→        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+   461→          {view === "board" ? (
+   462→            <div style={styles.boardGrid}>
+   463→              {STATUSES.map((status) => (
+   464→                <Column
+   465→                  key={status.value}
+   466→                  status={status.value}
+   467→                  label={status.label}
+   468→                  tasks={tasksByStatus[status.value]}
+   469→                  availableTags={tags}
+   470→                  isAdding={addingToColumn === status.value}
+   471→                  onAddStart={() => setAddingToColumn(status.value)}
+   472→                  onAddCancel={() => setAddingToColumn(null)}
+   473→                  onCreateTask={(data) => handleCreateTask(status.value, data)}
+   474→                />
+   475→              ))}
+   476→            </div>
+   477→          ) : (
+   478→            <ListView tasks={filteredTasks} tags={tags} />
+   479→          )}
+   480→        </DndContext>
+   481→      </main>
+   482→
+   483→      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+   484→    </div>
+   485→  );
+   486→}
+   487→
+   488→// Column Component
+   489→function Column({
+   490→  status,
+   491→  label,
+   492→  tasks,
+   493→  availableTags,
+   494→  isAdding,
+   495→  onAddStart,
+   496→  onAddCancel,
+   497→  onCreateTask,
+   498→}: {
+   499→  status: TaskStatus;
+   500→  label: string;
+   501→  tasks: Task[];
+   502→  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+   503→  isAdding: boolean;
+   504→  onAddStart: () => void;
+   505→  onAddCancel: () => void;
+   506→  onCreateTask: (data: { title: string; description: string; tags: string[] }) => void;
+   507→}) {
+   508→  const { setNodeRef } = useDroppable({ id: status, data: { status } });
+   509→  const taskIds = tasks.map(t => t.id.toString());
+   510→
+   511→  return (
+   512→    <div ref={setNodeRef} style={styles.column}>
+   513→      <div style={styles.columnHeader}>
+   514→        <span style={styles.columnTitle}>{label}</span>
+   515→        <span style={styles.taskCount}>{tasks.length}</span>
+   516→      </div>
+   517→
+   518→      <div style={styles.columnContent}>
+   519→        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+   520→          {tasks.map(task => (
+   521→            <SortableTaskCard
+   522→              key={task.id}
+   523→              task={task}
+   524→              availableTags={availableTags}
+   525→              onUpdate={async (id, data) => {
+   526→                await fetch(`/api/tasks/${id}`, {
+   527→                  method: "PATCH",
+   528→                  headers: { "Content-Type": "application/json" },
+   529→                  body: JSON.stringify(data),
+   530→                });
+   531→              }}
+   532→              onDelete={async (id) => {
+   533→                await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+   534→                window.location.reload();
+   535→              }}
+   536→            />
+   537→          ))}
+   538→        </SortableContext>
+   539→
+   540→        {isAdding ? (
+   541→          <MinimalTaskCreate onSave={onCreateTask} onCancel={onAddCancel} />
+   542→        ) : (
+   543→          <div
+   544→            onClick={onAddStart}
+   545→            style={{
+   546→              padding: '10px 12px',
+   547→              color: GRAY_600,
+   548→              fontSize: '13px',
+   549→              cursor: 'text',
+   550→              borderRadius: '8px',
+   551→              transition: 'all 0.15s',
+   552→            }}
+   553→            onMouseEnter={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900, color: GRAY_500 })}
+   554→            onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_600 })}
+   555→          >
+   556→            + Add task...
+   557→          </div>
+   558→        )}
+   559→      </div>
+   560→    </div>
+   561→  );
+   562→}
+   563→
+   564→// MINIMAL Task Creation - Single input, reveals description only after title
+   565→function MinimalTaskCreate({
+   566→  onSave,
+   567→  onCancel,
+   568→}: {
+   569→  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+   570→  onSave: (data: { title: string; description: string; tags: string[] }) => void;
+   571→  onCancel: () => void;
+   572→}) {
+   573→  const [title, setTitle] = useState("");
+   574→  const [description, setDescription] = useState("");
+   575→  const [showDescription, setShowDescription] = useState(false);
+   576→  const containerRef = useRef<HTMLDivElement>(null);
+   577→  const titleInputRef = useRef<HTMLInputElement>(null);
+   578→
+   579→  useEffect(() => {
+   580→    titleInputRef.current?.focus();
+   581→  }, []);
+   582→
+   583→  const handleSubmit = useCallback(() => {
+   584→    if (title.trim()) {
+   585→      onSave({ title: title.trim(), description: description.trim(), tags: [] });
+   586→    }
+   587→  }, [title, description, onSave]);
+   588→
+   589→  const handleClickOutside = useCallback((e: MouseEvent) => {
+   590→    if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+   591→      if (title.trim()) {
+   592→        handleSubmit();
+   593→      } else {
+   594→        onCancel();
+   595→      }
+   596→    }
+   597→  }, [title, handleSubmit, onCancel]);
+   598→
+   599→  useEffect(() => {
+   600→    document.addEventListener('mousedown', handleClickOutside as any);
+   601→    return () => document.removeEventListener('mousedown', handleClickOutside as any);
+   602→  }, [handleClickOutside]);
+   603→
+   604→  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+   605→    setTitle(e.target.value);
+   606→    if (e.target.value && !showDescription) {
+   607→      setShowDescription(true);
+   608→    }
+   609→  };
+   610→
+   611→  const handleKeyDown = (e: React.KeyboardEvent) => {
+   612→    if (e.key === 'Enter' && !e.shiftKey) {
+   613→      e.preventDefault();
+   614→      handleSubmit();
+   615→    } else if (e.key === 'Escape') {
+   616→      onCancel();
+   617→    }
+   618→  };
+   619→
+   620→  return (
+   621→    <div
+   622→      ref={containerRef}
+   623→      style={{
+   624→        padding: '8px 0',
+   625→        animation: 'fadeIn 0.15s ease-out',
+   626→      }}
+   627→    >
+   628→      <input
+   629→        ref={titleInputRef}
+   630→        type="text"
+   631→        value={title}
+   632→        onChange={handleTitleChange}
+   633→        placeholder="Task name..."
+   634→        style={{
+   635→          ...styles.minimalInput,
+   636→          ...(title ? {} : styles.minimalInputPlaceholder),
+   637→        }}
+   638→        onKeyDown={handleKeyDown}
+   639→      />
+   640→      {showDescription && (
+   641→        <input
+   642→          type="text"
+   643→          value={description}
+   644→          onChange={(e) => setDescription(e.target.value)}
+   645→          placeholder="Add description..."
+   646→          style={{
+   647→            ...styles.minimalInput,
+   648→            fontSize: '13px',
+   649→            marginTop: '4px',
+   650→            ...(description ? {} : { color: GRAY_600 }),
+   651→          }}
+   652→          onKeyDown={handleKeyDown}
+   653→          onFocus={(e) => Object.assign(e.currentTarget.style, { color: WHITE })}
+   654→          onBlur={(e) => !description && Object.assign(e.currentTarget.style, { color: GRAY_600 })}
+   655→        />
+   656→      )}
+   657→    </div>
+   658→  );
+   659→}
+   660→
+   661→// Sortable Task Card Wrapper
+   662→function SortableTaskCard({
+   663→  task,
+   664→  availableTags,
+   665→  onUpdate,
+   666→  onDelete,
+   667→}: {
+   668→  task: Task;
+   669→  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+   670→  onUpdate: (id: number, data: { title: string; description: string; status: TaskStatus; tags: string[] }) => void;
+   671→  onDelete: (id: number) => void;
+   672→}) {
+   673→  const {
+   674→    attributes,
+   675→    listeners,
+   676→    setNodeRef,
+   677→    transform,
+   678→    transition,
+   679→    isDragging,
+   680→  } = useSortable({ id: task.id.toString(), data: { status: task.status } });
+   681→
+   682→  const style = {
+   683→    transform: CSS.Transform.toString(transform),
+   684→    transition,
+   685→    opacity: isDragging ? 0.5 : 1,
+   686→  };
+   687→
+   688→  return (
+   689→    <div ref={setNodeRef} style={style}>
+   690→      <TaskCard task={task} availableTags={availableTags} onUpdate={onUpdate} onDelete={onDelete} dragAttributes={attributes} dragListeners={listeners} />
+   691→    </div>
+   692→  );
+   693→}
+   694→
+   695→// List View
+   696→function ListView({
+   697→  tasks,
+   698→  tags,
+   699→}: {
+   700→  tasks: Task[];
+   701→  tags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+   702→}) {
+   703→  const grouped = [
+   704→    { label: "To Do", tasks: tasks.filter(t => t.status === "not_started") },
+   705→    { label: "In Progress", tasks: tasks.filter(t => t.status === "in_progress") },
+   706→    { label: "Done", tasks: tasks.filter(t => t.status === "complete") },
+   707→  ].filter(g => g.tasks.length > 0);
+   708→
+   709→  return (
+   710→    <div style={styles.listView}>
+   711→      {grouped.map(group => (
+   712→        <div key={group.label}>
+   713→          <div style={{ fontSize: '11px', fontWeight: 600, color: GRAY_600, padding: '8px 16px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+   714→            {group.label} · {group.tasks.length}
+   715→          </div>
+   716→          {group.tasks.map(task => (
+   717→            <div
+   718→              key={task.id}
+   719→              style={styles.listRow}
+   720→              onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.listRowHover)}
+   721→              onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}
+   722→            >
+   723→              <span style={styles.listTitle}>{task.title}</span>
+   724→              <span style={styles.listStatus}>{group.label}</span>
+   725→            </div>
+   726→          ))}
+   727→        </div>
+   728→      ))}
+   729→    </div>
+   730→  );
+   731→}
+   732→
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:32:12.499Z)**_
+
+Now let me update the TaskCard with the same minimal inline edit approach - progressive reveal, no visible borders:
+
+_**Agent (glm-4.7 2026-01-19T17:32:12.560Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```tsx
+"use client";
+
+import { useState, useRef, useEffect, MouseEvent, useCallback } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Task, TaskStatus } from "@/lib/types";
+
+interface TaskCardProps {
+  task: Task;
+  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+  onUpdate: (id: number, data: { title: string; description: string; status: TaskStatus; tags: string[] }) => void;
+  onDelete: (id: number) => void;
+  dragAttributes?: any;
+  dragListeners?: any;
+}
+
+const STATUSES = [
+  { value: "not_started" as TaskStatus, label: "To Do" },
+  { value: "in_progress" as TaskStatus, label: "In Progress" },
+  { value: "complete" as TaskStatus, label: "Done" },
+];
+
+// Bold dark theme
+const BLACK = "#000000";
+const GRAY_900 = "#0a0a0a";
+const GRAY_800 = "#171717";
+const GRAY_700 = "#262626";
+const GRAY_600 = "#404060";
+const GRAY_500 = "#525252";
+const GRAY_400 = "#737373";
+const WHITE = "#ffffff";
+
+export default function TaskCard({ task, availableTags, onUpdate, onDelete, dragAttributes, dragListeners }: TaskCardProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+  const [editDescription, setEditDescription] = useState(task.description || "");
+  const [editStatus, setEditStatus] = useState<TaskStatus>(task.status);
+  const [showDescription, setShowDescription] = useState(!!task.description);
+  const [showStatus, setShowStatus] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing) {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }
+  }, [isEditing]);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: task.id.toString(),
+    data: { status: task.status },
+    disabled: isEditing,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const handleSave = useCallback(async () => {
+    if (!editTitle.trim()) return;
+    await onUpdate(task.id, {
+      title: editTitle.trim(),
+      description: editDescription.trim(),
+      status: editStatus,
+      tags: [],
+    });
+    setIsEditing(false);
+  }, [editTitle, editDescription, editStatus, task.id, onUpdate]);
+
+  const handleCancel = useCallback(() => {
+    setEditTitle(task.title);
+    setEditDescription(task.description || "");
+    setEditStatus(task.status);
+    setShowDescription(!!task.description);
+    setShowStatus(false);
+    setShowDelete(false);
+    setIsEditing(false);
+  }, [task.title, task.description, task.status]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    } else if (e.key === 'Backspace' && !editTitle && !showDelete) {
+      setShowDelete(true);
+    }
+  };
+
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    if (isEditing && containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (editTitle.trim()) {
+        handleSave();
+      } else {
+        handleCancel();
+      }
+    }
+  }, [isEditing, editTitle, handleSave, handleCancel]);
+
+  useEffect(() => {
+    if (isEditing) {
+      document.addEventListener('mousedown', handleClickOutside as any);
+      return () => document.removeEventListener('mousedown', handleClickOutside as any);
+    }
+  }, [isEditing, handleClickOutside]);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditTitle(e.target.value);
+    if (e.target.value && !showDescription) {
+      setShowDescription(true);
+      setShowStatus(true);
+    }
+  };
+
+  const confirmDelete = () => {
+    setShowDelete(false);
+    setIsEditing(false);
+    onDelete(task.id);
+  };
+
+  if (isEditing) {
+    return (
+      <div ref={containerRef} style={{ ...style, padding: '12px', backgroundColor: GRAY_900, borderRadius: '10px' }}>
+        {showDelete ? (
+          <div style={{ textAlign: 'center', padding: '8px 0' }}>
+            <p style={{ color: GRAY_400, fontSize: '13px', marginBottom: '12px' }}>Delete this task?</p>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <span
+                onClick={handleCancel}
+                style={{ fontSize: '13px', color: GRAY_500, cursor: 'pointer', padding: '4px 12px' }}
+                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { color: WHITE })}
+                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { color: GRAY_500 })}
+              >
+                Cancel
+              </span>
+              <span
+                onClick={confirmDelete}
+                style={{ fontSize: '13px', color: '#f87171', cursor: 'pointer', padding: '4px 12px' }}
+                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { color: '#ef4444' })}
+                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { color: '#f87171' })}
+              >
+                Delete
+              </span>
+            </div>
+          </div>
+        ) : (
+          <>
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={editTitle}
+              onChange={handleTitleChange}
+              placeholder="Task name..."
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                fontSize: '14px',
+                color: WHITE,
+                outline: 'none',
+                fontFamily: 'inherit',
+              }}
+              onKeyDown={handleKeyDown}
+            />
+            {showDescription && (
+              <input
+                type="text"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Add description..."
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  fontSize: '13px',
+                  color: editDescription ? WHITE : GRAY_600,
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                }}
+                onKeyDown={handleKeyDown}
+                onFocus={(e) => Object.assign(e.currentTarget.style, { color: WHITE })}
+                onBlur={(e) => !editDescription && Object.assign(e.currentTarget.style, { color: GRAY_600 })}
+              />
+            )}
+            {showStatus && (
+              <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+                {STATUSES.map((s) => (
+                  <span
+                    key={s.value}
+                    onClick={() => setEditStatus(s.value)}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      color: editStatus === s.value ? WHITE : GRAY_500,
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      backgroundColor: editStatus === s.value ? GRAY_700 : 'transparent',
+                    }}
+                    onMouseEnter={(e) => editStatus !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
+                    onMouseLeave={(e) => editStatus !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}
+                  >
+                    {s.label}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+              <span
+                onClick={() => setShowDelete(true)}
+                style={{ fontSize: '11px', color: GRAY_600, cursor: 'pointer' }}
+                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { color: '#f87171' })}
+                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { color: GRAY_600 })}
+              >
+                Delete
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        padding: '14px',
+        backgroundColor: GRAY_900,
+        borderRadius: '10px',
+        cursor: 'move',
+        transition: 'all 0.2s ease',
+      }}
+      {...(dragAttributes || {})}
+      {...(dragListeners || {})}
+      onClick={() => setIsEditing(true)}
+      onMouseEnter={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
+      onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}
+    >
+      <h3 style={{ fontSize: '14px', fontWeight: 500, color: WHITE, margin: 0, marginBottom: task.description ? '6px' : 0 }}>
+        {task.title}
+      </h3>
+      {task.description && <p style={{ fontSize: '13px', color: GRAY_500, margin: 0 }}>{task.description}</p>}
+
+      {task.tags.length > 0 && (
+        <div style={{ marginTop: '8px' }}>
+          {task.tags.map((tag) => (
+            <span key={tag.id} style={{ display: 'inline-block', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: WHITE, backgroundColor: tag.color }}>
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+```
+```
+The file /Users/ankur/D/Playground/my-trello/components/TaskCard.tsx has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
+     1→"use client";
+     2→
+     3→import { useState, useRef, useEffect, MouseEvent, useCallback } from "react";
+     4→import { useSortable } from "@dnd-kit/sortable";
+     5→import { CSS } from "@dnd-kit/utilities";
+     6→import { Task, TaskStatus } from "@/lib/types";
+     7→
+     8→interface TaskCardProps {
+     9→  task: Task;
+    10→  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+    11→  onUpdate: (id: number, data: { title: string; description: string; status: TaskStatus; tags: string[] }) => void;
+    12→  onDelete: (id: number) => void;
+    13→  dragAttributes?: any;
+    14→  dragListeners?: any;
+    15→}
+    16→
+    17→const STATUSES = [
+    18→  { value: "not_started" as TaskStatus, label: "To Do" },
+    19→  { value: "in_progress" as TaskStatus, label: "In Progress" },
+    20→  { value: "complete" as TaskStatus, label: "Done" },
+    21→];
+    22→
+    23→// Bold dark theme
+    24→const BLACK = "#000000";
+    25→const GRAY_900 = "#0a0a0a";
+    26→const GRAY_800 = "#171717";
+    27→const GRAY_700 = "#262626";
+    28→const GRAY_600 = "#404060";
+    29→const GRAY_500 = "#525252";
+    30→const GRAY_400 = "#737373";
+    31→const WHITE = "#ffffff";
+    32→
+    33→export default function TaskCard({ task, availableTags, onUpdate, onDelete, dragAttributes, dragListeners }: TaskCardProps) {
+    34→  const [isEditing, setIsEditing] = useState(false);
+    35→  const [editTitle, setEditTitle] = useState(task.title);
+    36→  const [editDescription, setEditDescription] = useState(task.description || "");
+    37→  const [editStatus, setEditStatus] = useState<TaskStatus>(task.status);
+    38→  const [showDescription, setShowDescription] = useState(!!task.description);
+    39→  const [showStatus, setShowStatus] = useState(false);
+    40→  const [showDelete, setShowDelete] = useState(false);
+    41→  const containerRef = useRef<HTMLDivElement>(null);
+    42→  const titleInputRef = useRef<HTMLInputElement>(null);
+    43→
+    44→  useEffect(() => {
+    45→    if (isEditing) {
+    46→      titleInputRef.current?.focus();
+    47→      titleInputRef.current?.select();
+    48→    }
+    49→  }, [isEditing]);
+    50→
+    51→  const {
+    52→    attributes,
+    53→    listeners,
+    54→    setNodeRef,
+    55→    transform,
+    56→    transition,
+    57→    isDragging,
+    58→  } = useSortable({
+    59→    id: task.id.toString(),
+    60→    data: { status: task.status },
+    61→    disabled: isEditing,
+    62→  });
+    63→
+    64→  const style = {
+    65→    transform: CSS.Transform.toString(transform),
+    66→    transition,
+    67→    opacity: isDragging ? 0.5 : 1,
+    68→  };
+    69→
+    70→  const handleSave = useCallback(async () => {
+    71→    if (!editTitle.trim()) return;
+    72→    await onUpdate(task.id, {
+    73→      title: editTitle.trim(),
+    74→      description: editDescription.trim(),
+    75→      status: editStatus,
+    76→      tags: [],
+    77→    });
+    78→    setIsEditing(false);
+    79→  }, [editTitle, editDescription, editStatus, task.id, onUpdate]);
+    80→
+    81→  const handleCancel = useCallback(() => {
+    82→    setEditTitle(task.title);
+    83→    setEditDescription(task.description || "");
+    84→    setEditStatus(task.status);
+    85→    setShowDescription(!!task.description);
+    86→    setShowStatus(false);
+    87→    setShowDelete(false);
+    88→    setIsEditing(false);
+    89→  }, [task.title, task.description, task.status]);
+    90→
+    91→  const handleKeyDown = (e: React.KeyboardEvent) => {
+    92→    if (e.key === 'Enter' && !e.shiftKey) {
+    93→      e.preventDefault();
+    94→      handleSave();
+    95→    } else if (e.key === 'Escape') {
+    96→      handleCancel();
+    97→    } else if (e.key === 'Backspace' && !editTitle && !showDelete) {
+    98→      setShowDelete(true);
+    99→    }
+   100→  };
+   101→
+   102→  const handleClickOutside = useCallback((e: MouseEvent) => {
+   103→    if (isEditing && containerRef.current && !containerRef.current.contains(e.target as Node)) {
+   104→      if (editTitle.trim()) {
+   105→        handleSave();
+   106→      } else {
+   107→        handleCancel();
+   108→      }
+   109→    }
+   110→  }, [isEditing, editTitle, handleSave, handleCancel]);
+   111→
+   112→  useEffect(() => {
+   113→    if (isEditing) {
+   114→      document.addEventListener('mousedown', handleClickOutside as any);
+   115→      return () => document.removeEventListener('mousedown', handleClickOutside as any);
+   116→    }
+   117→  }, [isEditing, handleClickOutside]);
+   118→
+   119→  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+   120→    setEditTitle(e.target.value);
+   121→    if (e.target.value && !showDescription) {
+   122→      setShowDescription(true);
+   123→      setShowStatus(true);
+   124→    }
+   125→  };
+   126→
+   127→  const confirmDelete = () => {
+   128→    setShowDelete(false);
+   129→    setIsEditing(false);
+   130→    onDelete(task.id);
+   131→  };
+   132→
+   133→  if (isEditing) {
+   134→    return (
+   135→      <div ref={containerRef} style={{ ...style, padding: '12px', backgroundColor: GRAY_900, borderRadius: '10px' }}>
+   136→        {showDelete ? (
+   137→          <div style={{ textAlign: 'center', padding: '8px 0' }}>
+   138→            <p style={{ color: GRAY_400, fontSize: '13px', marginBottom: '12px' }}>Delete this task?</p>
+   139→            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+   140→              <span
+   141→                onClick={handleCancel}
+   142→                style={{ fontSize: '13px', color: GRAY_500, cursor: 'pointer', padding: '4px 12px' }}
+   143→                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { color: WHITE })}
+   144→                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { color: GRAY_500 })}
+   145→              >
+   146→                Cancel
+   147→              </span>
+   148→              <span
+   149→                onClick={confirmDelete}
+   150→                style={{ fontSize: '13px', color: '#f87171', cursor: 'pointer', padding: '4px 12px' }}
+   151→                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { color: '#ef4444' })}
+   152→                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { color: '#f87171' })}
+   153→              >
+   154→                Delete
+   155→              </span>
+   156→            </div>
+   157→          </div>
+   158→        ) : (
+   159→          <>
+   160→            <input
+   161→              ref={titleInputRef}
+   162→              type="text"
+   163→              value={editTitle}
+   164→              onChange={handleTitleChange}
+   165→              placeholder="Task name..."
+   166→              style={{
+   167→                width: '100%',
+   168→                padding: '10px 12px',
+   169→                backgroundColor: 'transparent',
+   170→                border: 'none',
+   171→                fontSize: '14px',
+   172→                color: WHITE,
+   173→                outline: 'none',
+   174→                fontFamily: 'inherit',
+   175→              }}
+   176→              onKeyDown={handleKeyDown}
+   177→            />
+   178→            {showDescription && (
+   179→              <input
+   180→                type="text"
+   181→                value={editDescription}
+   182→                onChange={(e) => setEditDescription(e.target.value)}
+   183→                placeholder="Add description..."
+   184→                style={{
+   185→                  width: '100%',
+   186→                  padding: '8px 12px',
+   187→                  backgroundColor: 'transparent',
+   188→                  border: 'none',
+   189→                  fontSize: '13px',
+   190→                  color: editDescription ? WHITE : GRAY_600,
+   191→                  outline: 'none',
+   192→                  fontFamily: 'inherit',
+   193→                }}
+   194→                onKeyDown={handleKeyDown}
+   195→                onFocus={(e) => Object.assign(e.currentTarget.style, { color: WHITE })}
+   196→                onBlur={(e) => !editDescription && Object.assign(e.currentTarget.style, { color: GRAY_600 })}
+   197→              />
+   198→            )}
+   199→            {showStatus && (
+   200→              <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+   201→                {STATUSES.map((s) => (
+   202→                  <span
+   203→                    key={s.value}
+   204→                    onClick={() => setEditStatus(s.value)}
+   205→                    style={{
+   206→                      padding: '4px 10px',
+   207→                      fontSize: '11px',
+   208→                      color: editStatus === s.value ? WHITE : GRAY_500,
+   209→                      cursor: 'pointer',
+   210→                      borderRadius: '4px',
+   211→                      backgroundColor: editStatus === s.value ? GRAY_700 : 'transparent',
+   212→                    }}
+   213→                    onMouseEnter={(e) => editStatus !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
+   214→                    onMouseLeave={(e) => editStatus !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}
+   215→                  >
+   216→                    {s.label}
+   217→                  </span>
+   218→                ))}
+   219→              </div>
+   220→            )}
+   221→            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+   222→              <span
+   223→                onClick={() => setShowDelete(true)}
+   224→                style={{ fontSize: '11px', color: GRAY_600, cursor: 'pointer' }}
+   225→                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { color: '#f87171' })}
+   226→                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { color: GRAY_600 })}
+   227→              >
+   228→                Delete
+   229→              </span>
+   230→            </div>
+   231→          </>
+   232→        )}
+   233→      </div>
+   234→    );
+   235→  }
+   236→
+   237→  return (
+   238→    <div
+   239→      ref={setNodeRef}
+   240→      style={{
+   241→        ...style,
+   242→        padding: '14px',
+   243→        backgroundColor: GRAY_900,
+   244→        borderRadius: '10px',
+   245→        cursor: 'move',
+   246→        transition: 'all 0.2s ease',
+   247→      }}
+   248→      {...(dragAttributes || {})}
+   249→      {...(dragListeners || {})}
+   250→      onClick={() => setIsEditing(true)}
+   251→      onMouseEnter={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
+   252→      onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}
+   253→    >
+   254→      <h3 style={{ fontSize: '14px', fontWeight: 500, color: WHITE, margin: 0, marginBottom: task.description ? '6px' : 0 }}>
+   255→        {task.title}
+   256→      </h3>
+   257→      {task.description && <p style={{ fontSize: '13px', color: GRAY_500, margin: 0 }}>{task.description}</p>}
+   258→
+   259→      {task.tags.length > 0 && (
+   260→        <div style={{ marginTop: '8px' }}>
+   261→          {task.tags.map((tag) => (
+   262→            <span key={tag.id} style={{ display: 'inline-block', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: WHITE, backgroundColor: tag.color }}>
+   263→              {tag.name}
+   264→            </span>
+   265→          ))}
+   266→        </div>
+   267→      )}
+   268→    </div>
+   269→  );
+   270→}
+   271→
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:32:17.798Z)**_
+
+Now let me add the missing import for ArrowRightOnRectangleIcon and build to verify:
+
+_**Agent (glm-4.7 2026-01-19T17:32:17.800Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+```
+The file /Users/ankur/D/Playground/my-trello/components/Board.tsx has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:32:19.558Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build to verify success
+
+`npm run build 2>&1 | tail -15`
+```
+ ✓ Compiled successfully in 1153ms
+   Linting and checking validity of types ...
+Failed to compile.
+
+./components/Board.tsx:232:12
+Type error: Cannot find name 'GRAY_200'. Did you mean 'GRAY_900'?
+
+  230 |     flex: 1,
+  231 |     fontSize: '14px',
+**>** 232 |     color: GRAY_200,
+      |            **^**
+  233 |   },
+  234 |   listStatus: {
+  235 |     fontSize: '11px',
+Next.js build worker exited with code: 1 and signal: null
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:32:28.225Z)**_
+
+I removed GRAY_200 accidentally. Let me add it back:
+
+_**Agent (glm-4.7 2026-01-19T17:32:28.257Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+```
+The file /Users/ankur/D/Playground/my-trello/components/Board.tsx has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:32:30.328Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build to verify success
+
+`npm run build 2>&1 | tail -10`
+```
+Type error: Property 'availableTags' is missing in type '{ onSave: (data: { title: string; description: string; tags: string[]; }) => void; onCancel: () => void; }' but required in type '{ availableTags: { id: number; name: string; color: string; taskCount: number; }[]; onSave: (data: { title: string; description: string; tags: string[]; }) => void; onCancel: () => void; }'.
+
+  540 |
+  541 |         {isAdding ? (
+**>** 542 |           <MinimalTaskCreate onSave={onCreateTask} onCancel={onAddCancel} />
+      |            **^**
+  543 |         ) : (
+  544 |           <div
+  545 |             onClick={onAddStart}
+Next.js build worker exited with code: 1 and signal: null
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:32:37.995Z)**_
+
+I need to add the availableTags prop to MinimalTaskCreate:
+
+_**Agent (glm-4.7 2026-01-19T17:32:38.016Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+```
+The file /Users/ankur/D/Playground/my-trello/components/Board.tsx has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:32:41.507Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build to verify success
+
+`npm run build 2>&1 | tail -10`
+```
+└ ○ /auth/signup                         1.63 kB         107 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/255-cb395327542b56ef.js       45.9 kB
+  ├ chunks/4bd1b696-c023c6e3521b1417.js  54.2 kB
+  └ other shared chunks (total)          1.92 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+```
+</details></tool-use>
