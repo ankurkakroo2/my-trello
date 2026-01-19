@@ -33,16 +33,18 @@ const STATUSES: { value: TaskStatus; label: string }[] = [
   { value: "complete", label: "Done" },
 ];
 
-const BLACK = "#000000";
-const GRAY_900 = "#0a0a0a";
-const GRAY_800 = "#171717";
-const GRAY_700 = "#262626";
-const GRAY_600 = "#404040";
-const GRAY_500 = "#525252";
-const GRAY_400 = "#737373";
-const GRAY_300 = "#a3a3a3";
-const GRAY_200 = "#d4d4d4";
+// White background theme
 const WHITE = "#ffffff";
+const GRAY_100 = "#f5f5f5";
+const GRAY_200 = "#e5e5e5";
+const GRAY_300 = "#d4d4d4";
+const GRAY_400 = "#a3a3a3";
+const GRAY_500 = "#737373";
+const GRAY_600 = "#525252";
+const GRAY_700 = "#404040";
+const GRAY_800 = "#262626";
+const GRAY_900 = "#171717";
+const BLACK = "#000000";
 
 export default function Board() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -154,55 +156,66 @@ export default function Board() {
 
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
 
-  if (isLoading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: BLACK }}><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: WHITE, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div></div>;
+  if (isLoading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: WHITE }}><div style={{ width: '20px', height: '20px', border: '3px solid GRAY_200', borderTopColor: BLACK, borderRadius: '50%', animation: 'spin 0.6s linear infinite' }}></div></div>;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: BLACK }}>
-      <header style={{ position: 'sticky', top: 0, zIndex: 40, backgroundColor: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', padding: '14px 20px' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: WHITE, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+      {/* Header */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 40, backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid #e5e5e5', padding: '16px 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ fontSize: '18px', fontWeight: 700, color: WHITE, letterSpacing: '-0.02em' }}>TicTac</h1>
+          <h1 style={{ fontSize: '20px', fontWeight: 700, color: BLACK, letterSpacing: '-0.03em' }}>TicTac</h1>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {/* Search */}
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <MagnifyingGlassIcon style={{ position: 'absolute', left: '10px', color: GRAY_500, width: '14px', height: '14px', pointerEvents: 'none' }} />
-              <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '160px', padding: '7px 10px 7px 32px', backgroundColor: GRAY_900, border: '1px solid transparent', borderRadius: '8px', fontSize: '13px', color: WHITE, outline: 'none', transition: 'all 0.15s' }} onFocus={e => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255,255,255,0.15)', backgroundColor: GRAY_800 })} onBlur={e => Object.assign(e.currentTarget.style, { borderColor: 'transparent', backgroundColor: GRAY_900 })} />
+              <MagnifyingGlassIcon style={{ position: 'absolute', left: '12px', color: GRAY_500, width: '16px', height: '16px', pointerEvents: 'none' }} />
+              <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '180px', padding: '10px 12px 10px 38px', backgroundColor: GRAY_100, border: 'none', borderRadius: '10px', fontSize: '14px', color: BLACK, outline: 'none', transition: 'all 0.2s' }} onFocus={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_200 })} onBlur={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_100 })} />
             </div>
+
+            {/* Active filter pill */}
             {filterTag && (
-              <div onClick={() => setFilterTag(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 10px', backgroundColor: GRAY_800, borderRadius: '6px', fontSize: '12px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: tags.find(t => t.id === filterTag)?.color || GRAY_700 }}></span>
-                <span style={{ color: GRAY_300 }}>{tags.find(t => t.id === filterTag)?.name}</span>
-                <XMarkIcon style={{ width: '12px', height: '12px', color: GRAY_500 }} />
+              <div onClick={() => setFilterTag(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: GRAY_100, borderRadius: '8px', fontSize: '13px', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_200 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_100 })}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: tags.find(t => t.id === filterTag)?.color || GRAY_400 }}></span>
+                <span style={{ color: GRAY_700 }}>{tags.find(t => t.id === filterTag)?.name}</span>
+                <XMarkIcon style={{ width: '14px', height: '14px', color: GRAY_500 }} />
               </div>
             )}
-            <button onClick={() => setView(view === "board" ? "list" : "board")} style={{ padding: '7px', backgroundColor: view === "board" ? GRAY_800 : 'transparent', color: view === "board" ? WHITE : GRAY_500, borderRadius: '8px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }} title="Toggle view">
-              {view === "board" ? <Squares2X2Icon style={{ width: '16px', height: '16px' }} /> : <ListBulletIcon style={{ width: '16px', height: '16px' }} />}
+
+            {/* View toggle */}
+            <button onClick={() => setView(view === "board" ? "list" : "board")} style={{ padding: '10px', backgroundColor: view === "board" ? GRAY_100 : 'transparent', color: view === "board" ? BLACK : GRAY_500, borderRadius: '10px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} title="Toggle view">
+              {view === "board" ? <Squares2X2Icon style={{ width: '18px', height: '18px' }} /> : <ListBulletIcon style={{ width: '18px', height: '18px' }} />}
             </button>
+
+            {/* Filter dropdown */}
             <div ref={filterRef} style={{ position: 'relative' }}>
-              <button onClick={() => setShowFilterDropdown(!showFilterDropdown)} style={{ padding: '7px', backgroundColor: showFilterDropdown ? GRAY_800 : 'transparent', color: showFilterDropdown ? WHITE : GRAY_500, borderRadius: '8px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }} title="Filter by tag">
-                <TagIcon style={{ width: '16px', height: '16px' }} />
+              <button onClick={() => setShowFilterDropdown(!showFilterDropdown)} style={{ padding: '10px', backgroundColor: showFilterDropdown ? GRAY_100 : 'transparent', color: showFilterDropdown ? BLACK : GRAY_500, borderRadius: '10px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} title="Filter by tag">
+                <TagIcon style={{ width: '18px', height: '18px' }} />
               </button>
               {showFilterDropdown && (
-                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '6px', backgroundColor: GRAY_800, border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '6px', zIndex: 50, minWidth: '140px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', backgroundColor: WHITE, border: '1px solid #e5e5e5', borderRadius: '12px', padding: '8px', zIndex: 50, minWidth: '160px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
                   {tags.map(tag => (
-                    <div key={tag.id} onClick={() => { setFilterTag(tag.id); setShowFilterDropdown(false); }} style={{ padding: '8px 10px', fontSize: '13px', color: GRAY_300, cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_700 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: tag.color }}></span>
+                    <div key={tag.id} onClick={() => { setFilterTag(tag.id); setShowFilterDropdown(false); }} style={{ padding: '10px 12px', fontSize: '14px', color: GRAY_700, cursor: 'pointer', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'background 0.15s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_100 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}>
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: tag.color }}></span>
                       {tag.name}
                     </div>
                   ))}
-                  {filterTag && <div onClick={() => setFilterTag(null)} style={{ padding: '8px 10px', fontSize: '13px', color: GRAY_400, cursor: 'pointer', borderRadius: '4px', borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '4px' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_700 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}>Clear filter</div>}
+                  {filterTag && <div onClick={() => setFilterTag(null)} style={{ padding: '10px 12px', fontSize: '14px', color: GRAY_500, cursor: 'pointer', borderRadius: '8px', borderTop: '1px solid #e5e5e5', marginTop: '4px', transition: 'background 0.15s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_100 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}>Clear filter</div>}
                 </div>
               )}
             </div>
-            <button onClick={() => signOut({ callbackUrl: "/auth/signin" })} style={{ padding: '7px', backgroundColor: 'transparent', color: GRAY_500, borderRadius: '8px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }} title="Sign out">
-              <ArrowRightOnRectangleIcon style={{ width: '16px', height: '16px' }} />
+
+            {/* Sign out */}
+            <button onClick={() => signOut({ callbackUrl: "/auth/signin" })} style={{ padding: '10px', backgroundColor: 'transparent', color: GRAY_500, borderRadius: '10px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} title="Sign out" onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_100, color: BLACK })} onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: 'transparent', color: GRAY_500 })}>
+              <ArrowRightOnRectangleIcon style={{ width: '18px', height: '18px' }} />
             </button>
           </div>
         </div>
       </header>
 
-      <main style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Main content */}
+      <main style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           {view === "board" ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
               {STATUSES.map(status => (
                 <Column key={status.value} status={status.value} label={status.label} tasks={tasksByStatus[status.value]} availableTags={tags} />
               ))}
@@ -219,15 +232,16 @@ export default function Board() {
           suppressContentEditableWarning
           onFocus={() => setIsFocused(true)}
           style={{
-            fontSize: '15px',
+            fontSize: '16px',
             fontWeight: 400,
-            color: WHITE,
+            color: BLACK,
             outline: 'none',
-            marginTop: '20px',
-            padding: '12px 16px',
+            marginTop: '24px',
+            padding: '14px 0',
             cursor: 'text',
-            opacity: newTaskTitle || isFocused ? 1 : 0.4,
-            transition: 'opacity 0.15s',
+            opacity: newTaskTitle || isFocused ? 1 : 0.5,
+            transition: 'opacity 0.2s',
+            borderBottom: isFocused ? '2px solid BLACK' : '2px solid transparent',
           }}
           onInput={e => setNewTaskTitle(e.currentTarget.textContent || "")}
         >{newTaskTitle || "+ Add a task..."}</div>
@@ -245,12 +259,15 @@ function Column({ status, label, tasks, availableTags }: {
   const taskIds = tasks.map(t => t.id.toString());
 
   return (
-    <div ref={setNodeRef} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div ref={setNodeRef} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Column header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
-        <span style={{ fontSize: '12px', fontWeight: 600, color: GRAY_500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</span>
-        <span style={{ fontSize: '12px', color: GRAY_600 }}>{tasks.length}</span>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: GRAY_500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</span>
+        <span style={{ fontSize: '13px', color: GRAY_400, fontWeight: 500 }}>{tasks.length}</span>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minHeight: '60px' }}>
+
+      {/* Tasks */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '60px' }}>
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {tasks.map(task => (
             <SortableTaskCard key={task.id} task={task} availableTags={availableTags} onUpdate={async (id: number, data: any) => { await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); }} onDelete={async (id: number) => { await fetch(`/api/tasks/${id}`, { method: "DELETE" }); window.location.reload(); }} />
@@ -263,7 +280,7 @@ function Column({ status, label, tasks, availableTags }: {
 
 function SortableTaskCard({ task, availableTags, onUpdate, onDelete }: { task: Task; availableTags: any[]; onUpdate: any; onDelete: any }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id.toString(), data: { status: task.status } });
-  return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}>
+  return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}>
     <TaskCard task={task} availableTags={availableTags} onUpdate={onUpdate} onDelete={onDelete} dragAttributes={attributes} dragListeners={listeners} />
   </div>;
 }
@@ -276,13 +293,13 @@ function ListView({ tasks, tags }: { tasks: Task[]; tags: any[] }) {
   ].filter(g => g.tasks.length > 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {grouped.map(group => (
         <div key={group.label}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: GRAY_500, padding: '4px 8px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{group.label} · {group.tasks.length}</div>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: GRAY_500, padding: '4px 8px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{group.label} · {group.tasks.length}</div>
           {group.tasks.map(task => (
-            <div key={task.id} style={{ padding: '12px 16px', backgroundColor: GRAY_900, borderRadius: '8px', marginTop: '4px', transition: 'all 0.15s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}>
-              <span style={{ fontSize: '14px', color: WHITE }}>{task.title}</span>
+            <div key={task.id} style={{ padding: '14px 18px', backgroundColor: WHITE, border: '1px solid #e5e5e5', borderRadius: '10px', marginTop: '6px', transition: 'all 0.2s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { borderColor: GRAY_300, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' })} onMouseLeave={e => Object.assign(e.currentTarget.style, { borderColor: '#e5e5e5', boxShadow: 'none' })}>
+              <span style={{ fontSize: '15px', color: BLACK }}>{task.title}</span>
             </div>
           ))}
         </div>

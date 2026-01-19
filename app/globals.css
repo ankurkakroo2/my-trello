@@ -2,18 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Bold dark theme */
+/* Clean white theme */
 * {
   box-sizing: border-box;
 }
 
 body {
-  background-color: #000000;
-  color: #ffffff;
+  background-color: #ffffff;
+  color: #000000;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  color: #ffffff;
+  color: #000000;
   font-weight: 600;
 }
 

@@ -5,15 +5,16 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-// Bold dark theme colors
-const BLACK = "#000000";
-const GRAY_900 = "#0a0a0a";
-const GRAY_800 = "#171717";
-const GRAY_700 = "#262626";
-const GRAY_600 = "#404040";
-const GRAY_400 = "#737373";
-const GRAY_300 = "#a3a3a3";
+// Clean white theme
 const WHITE = "#ffffff";
+const GRAY_100 = "#f5f5f5";
+const GRAY_200 = "#e5e5e5";
+const GRAY_300 = "#d4d4d4";
+const GRAY_400 = "#a3a3a3";
+const GRAY_500 = "#737373";
+const GRAY_600 = "#525252";
+const GRAY_700 = "#404040";
+const BLACK = "#000000";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -46,31 +47,31 @@ export default function SignInPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: BLACK,
+      backgroundColor: WHITE,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '16px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", sans-serif'
+      padding: '20px',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
     }}>
-      <div style={{ width: '100%', maxWidth: '380px' }}>
+      <div style={{ width: '100%', maxWidth: '400px' }}>
         <div style={{
-          padding: '40px 0',
+          padding: '48px 0',
           textAlign: 'center'
         }}>
           <h1 style={{
-            fontSize: '32px',
+            fontSize: '36px',
             fontWeight: 700,
-            color: WHITE,
+            color: BLACK,
             marginBottom: '8px',
-            letterSpacing: '-0.02em',
+            letterSpacing: '-0.03em',
           }}>
             TicTac
           </h1>
           <p style={{
-            fontSize: '14px',
-            color: GRAY_400,
-            marginBottom: '40px',
+            fontSize: '15px',
+            color: GRAY_500,
+            marginBottom: '48px',
           }}>
             Sign in to manage your tasks
           </p>
@@ -79,10 +80,10 @@ export default function SignInPage() {
             <div>
               <label htmlFor="email" style={{
                 display: 'block',
-                fontSize: '12px',
+                fontSize: '13px',
                 fontWeight: 500,
                 marginBottom: '8px',
-                color: GRAY_300,
+                color: GRAY_700,
                 textAlign: 'left',
               }}>
                 Email
@@ -94,29 +95,29 @@ export default function SignInPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '12px',
-                  backgroundColor: GRAY_800,
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  color: WHITE,
+                  padding: '14px 16px',
+                  backgroundColor: GRAY_100,
+                  border: '2px solid transparent',
+                  borderRadius: '12px',
+                  fontSize: '15px',
+                  color: BLACK,
                   outline: 'none',
-                  transition: 'all 0.2s ease',
+                  transition: 'all 0.2s',
                 }}
                 placeholder="you@example.com"
                 required
-                onFocus={(e) => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255, 255, 255, 0.15)', backgroundColor: GRAY_700 })}
-                onBlur={(e) => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: GRAY_800 })}
+                onFocus={(e) => Object.assign(e.currentTarget.style, { borderColor: GRAY_300, backgroundColor: WHITE })}
+                onBlur={(e) => Object.assign(e.currentTarget.style, { borderColor: 'transparent', backgroundColor: GRAY_100 })}
               />
             </div>
 
             <div>
               <label htmlFor="password" style={{
                 display: 'block',
-                fontSize: '12px',
+                fontSize: '13px',
                 fontWeight: 500,
                 marginBottom: '8px',
-                color: GRAY_300,
+                color: GRAY_700,
                 textAlign: 'left',
               }}>
                 Password
@@ -128,20 +129,20 @@ export default function SignInPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '12px',
-                  backgroundColor: GRAY_800,
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  color: WHITE,
+                  padding: '14px 16px',
+                  backgroundColor: GRAY_100,
+                  border: '2px solid transparent',
+                  borderRadius: '12px',
+                  fontSize: '15px',
+                  color: BLACK,
                   outline: 'none',
-                  transition: 'all 0.2s ease',
+                  transition: 'all 0.2s',
                 }}
                 placeholder="•••••••••"
                 required
                 minLength={6}
-                onFocus={(e) => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255, 255, 255, 0.15)', backgroundColor: GRAY_700 })}
-                onBlur={(e) => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: GRAY_800 })}
+                onFocus={(e) => Object.assign(e.currentTarget.style, { borderColor: GRAY_300, backgroundColor: WHITE })}
+                onBlur={(e) => Object.assign(e.currentTarget.style, { borderColor: 'transparent', backgroundColor: GRAY_100 })}
               />
             </div>
 
@@ -150,21 +151,21 @@ export default function SignInPage() {
               disabled={isLoading}
               style={{
                 width: '100%',
-                padding: '12px',
-                backgroundColor: WHITE,
-                color: BLACK,
+                padding: '16px',
+                backgroundColor: BLACK,
+                color: WHITE,
                 fontWeight: 600,
-                fontSize: '14px',
+                fontSize: '15px',
                 border: 'none',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
-                opacity: isLoading ? 0.5 : 1,
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                opacity: isLoading ? 0.6 : 1,
+                transition: 'all 0.2s',
               }}
               onMouseEnter={(e) => {
                 if (!isLoading) {
                   e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(255, 255, 255, 0.15)';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
                 }
               }}
               onMouseLeave={(e) => {
@@ -179,15 +180,15 @@ export default function SignInPage() {
 
         <div style={{ textAlign: 'center' }}>
           <p style={{
-            color: GRAY_400,
-            fontSize: '13px',
+            color: GRAY_500,
+            fontSize: '14px',
           }}>
             Don&apos;t have an account?{" "}
             <Link
               href="/auth/signup"
               style={{
-                fontWeight: 500,
-                color: WHITE,
+                fontWeight: 600,
+                color: BLACK,
                 textDecoration: 'none',
               }}
             >

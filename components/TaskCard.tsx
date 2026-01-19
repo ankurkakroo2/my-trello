@@ -14,13 +14,18 @@ interface TaskCardProps {
   dragListeners?: any;
 }
 
-const BLACK = "#000000";
-const GRAY_900 = "#0a0a0a";
-const GRAY_800 = "#171717";
-const GRAY_700 = "#262626";
-const GRAY_500 = "#525252";
-const GRAY_400 = "#737373";
+// White background theme
 const WHITE = "#ffffff";
+const GRAY_100 = "#f5f5f5";
+const GRAY_200 = "#e5e5e5";
+const GRAY_300 = "#d4d4d4";
+const GRAY_400 = "#a3a3a3";
+const GRAY_500 = "#737373";
+const GRAY_600 = "#525252";
+const GRAY_700 = "#404040";
+const GRAY_800 = "#262626";
+const GRAY_900 = "#171717";
+const BLACK = "#000000";
 
 export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dragListeners }: TaskCardProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -39,7 +44,7 @@ export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dra
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   const save = useCallback(() => {
@@ -57,7 +62,6 @@ export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dra
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      // Place cursor at end
       const range = document.createRange();
       const sel = window.getSelection();
       if (inputRef.current.childNodes.length > 0 && sel) {
@@ -95,35 +99,37 @@ export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dra
     }
   };
 
-  // Just one editable field - ultra minimal
+  // White card with subtle border
   return (
     <div
       ref={setNodeRef}
       style={{
         ...style,
-        padding: '12px 16px',
-        backgroundColor: isEditing ? GRAY_800 : GRAY_900,
-        borderRadius: '8px',
+        padding: '16px 18px',
+        backgroundColor: WHITE,
+        border: isEditing ? '2px solid BLACK' : '1px solid #e5e5e5',
+        borderRadius: '12px',
         cursor: isEditing ? 'text' : 'grab',
-        transition: 'all 0.15s ease',
+        transition: 'all 0.2s ease',
+        boxShadow: isEditing ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
       }}
       {...(isEditing ? {} : dragAttributes)}
       {...(isEditing ? {} : dragListeners)}
       onClick={() => !isEditing && setIsEditing(true)}
-      onMouseEnter={e => { if (!isEditing) Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 }); }}
-      onMouseLeave={e => { if (!isEditing) Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 }); }}
+      onMouseEnter={e => { if (!isEditing) Object.assign(e.currentTarget.style, { borderColor: GRAY_300, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }); }}
+      onMouseLeave={e => { if (!isEditing) Object.assign(e.currentTarget.style, { borderColor: '#e5e5e5', boxShadow: 'none' }); }}
     >
       <div
         ref={inputRef}
         contentEditable={isEditing}
         suppressContentEditableWarning
         style={{
-          fontSize: '14px',
+          fontSize: '15px',
           fontWeight: 500,
-          color: WHITE,
+          color: BLACK,
           outline: 'none',
-          minHeight: '20px',
-          lineHeight: '1.4',
+          minHeight: '22px',
+          lineHeight: '1.5',
         }}
         onInput={e => setText(e.currentTarget.textContent || "")}
         onKeyDown={handleKeyDown}
