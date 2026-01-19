@@ -20,8 +20,6 @@ const STATUSES = [
   { value: "complete" as TaskStatus, label: "Done" },
 ];
 
-// Bold dark theme
-const BLACK = "#000000";
 const GRAY_900 = "#0a0a0a";
 const GRAY_800 = "#171717";
 const GRAY_700 = "#262626";
@@ -30,23 +28,22 @@ const GRAY_500 = "#525252";
 const GRAY_400 = "#737373";
 const WHITE = "#ffffff";
 
-export default function TaskCard({ task, availableTags, onUpdate, onDelete, dragAttributes, dragListeners }: TaskCardProps) {
+export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dragListeners }: TaskCardProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(task.title);
-  const [editDescription, setEditDescription] = useState(task.description || "");
-  const [editStatus, setEditStatus] = useState<TaskStatus>(task.status);
-  const [showDescription, setShowDescription] = useState(!!task.description);
-  const [showStatus, setShowStatus] = useState(false);
-  const [showDelete, setShowDelete] = useState(false);
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description || "");
+  const [status, setStatus] = useState<TaskStatus>(task.status);
+  const [step, setStep] = useState<'title' | 'description' | 'status' | 'delete'>('title');
+  const [showDesc, setShowDesc] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const titleInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isEditing) {
-      titleInputRef.current?.focus();
-      titleInputRef.current?.select();
+      inputRef.current?.focus();
+      inputRef.current?.select();
     }
-  }, [isEditing]);
+  }, [isEditing, step]);
 
   const {
     attributes,
@@ -67,47 +64,18 @@ export default function TaskCard({ task, availableTags, onUpdate, onDelete, drag
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleSave = useCallback(async () => {
-    if (!editTitle.trim()) return;
-    await onUpdate(task.id, {
-      title: editTitle.trim(),
-      description: editDescription.trim(),
-      status: editStatus,
-      tags: [],
-    });
+  const saveAndClose = useCallback(async () => {
+    if (!title.trim()) return;
+    await onUpdate(task.id, { title: title.trim(), description: description.trim(), status, tags: [] });
     setIsEditing(false);
-  }, [editTitle, editDescription, editStatus, task.id, onUpdate]);
-
-  const handleCancel = useCallback(() => {
-    setEditTitle(task.title);
-    setEditDescription(task.description || "");
-    setEditStatus(task.status);
-    setShowDescription(!!task.description);
-    setShowStatus(false);
-    setShowDelete(false);
-    setIsEditing(false);
-  }, [task.title, task.description, task.status]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSave();
-    } else if (e.key === 'Escape') {
-      handleCancel();
-    } else if (e.key === 'Backspace' && !editTitle && !showDelete) {
-      setShowDelete(true);
-    }
-  };
+  }, [title, description, status, task.id, onUpdate]);
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
-    if (isEditing && containerRef.current && !containerRef.current.contains(e.target as Node)) {
-      if (editTitle.trim()) {
-        handleSave();
-      } else {
-        handleCancel();
-      }
-    }
-  }, [isEditing, editTitle, handleSave, handleCancel]);
+    if (!isEditing || !containerRef.current) return;
+    if (containerRef.current.contains(e.target as Node)) return;
+    if (step === 'delete') return;
+    saveAndClose();
+  }, [isEditing, step, saveAndClose]);
 
   useEffect(() => {
     if (isEditing) {
@@ -116,119 +84,109 @@ export default function TaskCard({ task, availableTags, onUpdate, onDelete, drag
     }
   }, [isEditing, handleClickOutside]);
 
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditTitle(e.target.value);
-    if (e.target.value && !showDescription) {
-      setShowDescription(true);
-      setShowStatus(true);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (step === 'title') {
+        if (title.trim()) {
+          setShowDesc(true);
+          setStep('description');
+        }
+      } else if (step === 'description') {
+        setStep('status');
+      } else if (step === 'status') {
+        saveAndClose();
+      }
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setTitle(task.title);
+      setDescription(task.description || "");
+      setStatus(task.status);
+      setShowDesc(false);
+      setStep('title');
+    } else if (e.key === 'Backspace' && !title && step === 'title') {
+      setStep('delete');
     }
   };
 
   const confirmDelete = () => {
-    setShowDelete(false);
-    setIsEditing(false);
     onDelete(task.id);
   };
 
   if (isEditing) {
     return (
       <div ref={containerRef} style={{ ...style, padding: '12px', backgroundColor: GRAY_900, borderRadius: '10px' }}>
-        {showDelete ? (
+        {step === 'delete' && (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <p style={{ color: GRAY_400, fontSize: '13px', marginBottom: '12px' }}>Delete this task?</p>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-              <span
-                onClick={handleCancel}
-                style={{ fontSize: '13px', color: GRAY_500, cursor: 'pointer', padding: '4px 12px' }}
-                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { color: WHITE })}
-                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { color: GRAY_500 })}
-              >
-                Cancel
-              </span>
-              <span
-                onClick={confirmDelete}
-                style={{ fontSize: '13px', color: '#f87171', cursor: 'pointer', padding: '4px 12px' }}
-                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { color: '#ef4444' })}
-                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { color: '#f87171' })}
-              >
-                Delete
-              </span>
+            <span style={{ fontSize: '13px', color: GRAY_500 }}>Delete?</span>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '8px' }}>
+              <span onClick={confirmDelete} style={{ fontSize: '13px', color: '#f87171', cursor: 'pointer' }}>Yes</span>
+              <span onClick={() => setStep('title')} style={{ fontSize: '13px', color: GRAY_500, cursor: 'pointer' }}>No</span>
             </div>
           </div>
-        ) : (
-          <>
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={editTitle}
-              onChange={handleTitleChange}
-              placeholder="Task name..."
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                backgroundColor: 'transparent',
-                border: 'none',
-                fontSize: '14px',
-                color: WHITE,
-                outline: 'none',
-                fontFamily: 'inherit',
-              }}
-              onKeyDown={handleKeyDown}
-            />
-            {showDescription && (
-              <input
-                type="text"
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="Add description..."
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  fontSize: '13px',
-                  color: editDescription ? WHITE : GRAY_600,
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                }}
-                onKeyDown={handleKeyDown}
-                onFocus={(e) => Object.assign(e.currentTarget.style, { color: WHITE })}
-                onBlur={(e) => !editDescription && Object.assign(e.currentTarget.style, { color: GRAY_600 })}
-              />
-            )}
-            {showStatus && (
-              <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
-                {STATUSES.map((s) => (
-                  <span
-                    key={s.value}
-                    onClick={() => setEditStatus(s.value)}
-                    style={{
-                      padding: '4px 10px',
-                      fontSize: '11px',
-                      color: editStatus === s.value ? WHITE : GRAY_500,
-                      cursor: 'pointer',
-                      borderRadius: '4px',
-                      backgroundColor: editStatus === s.value ? GRAY_700 : 'transparent',
-                    }}
-                    onMouseEnter={(e) => editStatus !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
-                    onMouseLeave={(e) => editStatus !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}
-                  >
-                    {s.label}
-                  </span>
-                ))}
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+        )}
+
+        {step === 'title' && (
+          <input
+            ref={inputRef}
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Task name..."
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              fontSize: '14px',
+              color: WHITE,
+              outline: 'none',
+            }}
+            onKeyDown={handleKeyDown}
+          />
+        )}
+
+        {step === 'description' && (
+          <input
+            ref={inputRef}
+            type="text"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Add description..."
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              fontSize: '14px',
+              color: WHITE,
+              outline: 'none',
+            }}
+            onKeyDown={handleKeyDown}
+          />
+        )}
+
+        {step === 'status' && (
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {STATUSES.map(s => (
               <span
-                onClick={() => setShowDelete(true)}
-                style={{ fontSize: '11px', color: GRAY_600, cursor: 'pointer' }}
-                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { color: '#f87171' })}
-                onMouseLeave={(e) => Object.assign(e.currentTarget.style, { color: GRAY_600 })}
+                key={s.value}
+                onClick={() => { setStatus(s.value); saveAndClose(); }}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  color: status === s.value ? WHITE : GRAY_500,
+                  cursor: 'pointer',
+                  borderRadius: '6px',
+                  backgroundColor: status === s.value ? GRAY_700 : 'transparent',
+                }}
+                onMouseEnter={e => status !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
+                onMouseLeave={e => status !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}
               >
-                Delete
+                {s.label}
               </span>
-            </div>
-          </>
+            ))}
+          </div>
         )}
       </div>
     );
@@ -243,23 +201,24 @@ export default function TaskCard({ task, availableTags, onUpdate, onDelete, drag
         backgroundColor: GRAY_900,
         borderRadius: '10px',
         cursor: 'move',
-        transition: 'all 0.2s ease',
+        transition: 'background-color 0.2s',
       }}
       {...(dragAttributes || {})}
       {...(dragListeners || {})}
-      onClick={() => setIsEditing(true)}
-      onMouseEnter={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
-      onMouseLeave={(e) => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}
+      onClick={() => { setIsEditing(true); setStep('title'); setShowDesc(!!task.description); }}
+      onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
+      onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}
     >
-      <h3 style={{ fontSize: '14px', fontWeight: 500, color: WHITE, margin: 0, marginBottom: task.description ? '6px' : 0 }}>
+      <div style={{ fontSize: '14px', fontWeight: 500, color: WHITE, marginBottom: task.description ? '4px' : 0 }}>
         {task.title}
-      </h3>
-      {task.description && <p style={{ fontSize: '13px', color: GRAY_500, margin: 0 }}>{task.description}</p>}
-
+      </div>
+      {task.description && (
+        <div style={{ fontSize: '13px', color: GRAY_500 }}>{task.description}</div>
+      )}
       {task.tags.length > 0 && (
-        <div style={{ marginTop: '8px' }}>
-          {task.tags.map((tag) => (
-            <span key={tag.id} style={{ display: 'inline-block', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: WHITE, backgroundColor: tag.color }}>
+        <div style={{ marginTop: '8px', display: 'flex', gap: '4px' }}>
+          {task.tags.map(tag => (
+            <span key={tag.id} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: WHITE, backgroundColor: tag.color }}>
               {tag.name}
             </span>
           ))}

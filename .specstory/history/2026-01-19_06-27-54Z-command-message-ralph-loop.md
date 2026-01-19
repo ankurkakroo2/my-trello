@@ -70568,3 +70568,639 @@ Build to verify success
 ƒ  (Dynamic)  server-rendered on demand
 ```
 </details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:32:52.883Z)**_
+
+Build successful! Now let me commit and push:
+
+_**Agent (glm-4.7 2026-01-19T17:32:52.918Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit and push changes
+
+```bash
+git add -A && git commit -m "$(cat <<'EOF'
+Ultra-minimal inline edit: single placeholder, progressive reveal
+
+- Create task: single input field, description reveals after typing
+- Edit task: clean minimal interface, no visible borders
+- All placeholders look like regular text until focused
+- Enter or click outside saves, Esc cancels
+- Tag filter dropdown restored
+- Layout toggle (board/list) restored
+- Even more minimal dark aesthetic
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+EOF
+)" && git push
+```
+```
+[main 970ed80] Ultra-minimal inline edit: single placeholder, progressive reveal
+ Committer: Ankur Kakroo <ankur@Ankur-Kakroo.local>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
+
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 4 files changed, 2600 insertions(+), 399 deletions(-)
+To https://github.com/ankurkakroo2/my-trello.git
+   16afa4b..970ed80  main -> main
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:32:57.288Z)**_
+
+<tool-use data-tool-type="task" data-tool-name="TodoWrite"><details>
+<summary>Tool use: **TodoWrite**</summary>
+**Agent task list:**
+- [X] 🌡️ Simplify inline edit - single placeholder, no visible boxes
+- [X] 🌡️ Verify filters and layout toggle are working
+
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:33:01.339Z)**_
+
+All tasks completed. Let me provide a summary.</think>DONE
+
+**Summary of changes:**
+
+1. **Ultra-minimal inline edit** - 
+   - Single placeholder input when creating tasks
+   - Description field only appears after you type a title
+   - Status buttons reveal progressively
+   - No visible borders - inputs look like plain text until focused
+   - Delete option is subtle until you look for it
+
+2. **Filters and Layout restored** -
+   - Tag icon now opens dropdown with all available tags
+   - Filter badge shows when filter is active with X to dismiss
+   - View toggle (grid/list) button in header
+
+3. **Bold dark aesthetic** - 
+   - Pure black background
+   - Dark grey cards (#171717)
+   - Minimal borders (only on hover)
+   - Clean typography with Inter/system fonts
+
+4. **Slick animations** - 
+   - Fade-in for new inputs
+   - Smooth hover transitions
+   - Cubic-bezier easing
+
+**Key inline edit behavior:**
+- Enter or click outside = saves
+- Esc = cancels
+- Backspace on empty title = shows delete option
+- No submit buttons anywhere
+
+---
+
+_**User (2026-01-19T17:33:01.686Z)**_
+
+Stop hook feedback:
+
+I want a better overall look. it needs to look bold but also very clean. Shades of grey -> black. Animations need to be slick and smooth. the inline edit is still not good. too many text boxes. when you create a tile, just show placeholders without borders. no submit button. Enter or a click outside saves it. Esc dismisses. Also looks like you removed the filters and Layout change. bring it back. One done print DONE --completion-text=DONE
+
+---
+
+_**Agent (glm-4.7 2026-01-19T17:33:05.616Z)**_
+
+Looking at this again - the inline edit still shows multiple fields at once in edit mode. I need to make it truly minimal - show only what's being edited, everything else hidden. Also I notice the TaskColumn component still exists but isn't being used - let me clean that up.
+
+_**Agent (glm-4.7 2026-01-19T17:33:05.654Z)**_
+
+<tool-use data-tool-type="task" data-tool-name="TodoWrite"><details>
+<summary>Tool use: **TodoWrite**</summary>
+**Agent task list:**
+- [⚡] 🌡️ Edit mode: show only one field at a time
+
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:33:19.965Z)**_
+
+The key issue is in TaskCard edit mode - it shows title, description, status buttons, and delete all at once. I need to make it truly minimal - just like the create flow, but inline:
+
+_**Agent (glm-4.7 2026-01-19T17:33:20.018Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```tsx
+"use client";
+
+import { useState, useRef, useEffect, MouseEvent, useCallback } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Task, TaskStatus } from "@/lib/types";
+
+interface TaskCardProps {
+  task: Task;
+  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+  onUpdate: (id: number, data: { title: string; description: string; status: TaskStatus; tags: string[] }) => void;
+  onDelete: (id: number) => void;
+  dragAttributes?: any;
+  dragListeners?: any;
+}
+
+const STATUSES = [
+  { value: "not_started" as TaskStatus, label: "To Do" },
+  { value: "in_progress" as TaskStatus, label: "In Progress" },
+  { value: "complete" as TaskStatus, label: "Done" },
+];
+
+const GRAY_900 = "#0a0a0a";
+const GRAY_800 = "#171717";
+const GRAY_700 = "#262626";
+const GRAY_600 = "#404060";
+const GRAY_500 = "#525252";
+const GRAY_400 = "#737373";
+const WHITE = "#ffffff";
+
+export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dragListeners }: TaskCardProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description || "");
+  const [status, setStatus] = useState<TaskStatus>(task.status);
+  const [step, setStep] = useState<'title' | 'description' | 'status' | 'delete'>('title');
+  const [showDesc, setShowDesc] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [isEditing, step]);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: task.id.toString(),
+    data: { status: task.status },
+    disabled: isEditing,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const saveAndClose = useCallback(async () => {
+    if (!title.trim()) return;
+    await onUpdate(task.id, { title: title.trim(), description: description.trim(), status, tags: [] });
+    setIsEditing(false);
+  }, [title, description, status, task.id, onUpdate]);
+
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    if (!isEditing || !containerRef.current) return;
+    if (containerRef.current.contains(e.target as Node)) return;
+    if (step === 'delete') return;
+    saveAndClose();
+  }, [isEditing, step, saveAndClose]);
+
+  useEffect(() => {
+    if (isEditing) {
+      document.addEventListener('mousedown', handleClickOutside as any);
+      return () => document.removeEventListener('mousedown', handleClickOutside as any);
+    }
+  }, [isEditing, handleClickOutside]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (step === 'title') {
+        if (title.trim()) {
+          setShowDesc(true);
+          setStep('description');
+        }
+      } else if (step === 'description') {
+        setStep('status');
+      } else if (step === 'status') {
+        saveAndClose();
+      }
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setTitle(task.title);
+      setDescription(task.description || "");
+      setStatus(task.status);
+      setShowDesc(false);
+      setStep('title');
+    } else if (e.key === 'Backspace' && !title && step === 'title') {
+      setStep('delete');
+    }
+  };
+
+  const confirmDelete = () => {
+    onDelete(task.id);
+  };
+
+  if (isEditing) {
+    return (
+      <div ref={containerRef} style={{ ...style, padding: '12px', backgroundColor: GRAY_900, borderRadius: '10px' }}>
+        {step === 'delete' && (
+          <div style={{ textAlign: 'center', padding: '8px 0' }}>
+            <span style={{ fontSize: '13px', color: GRAY_500 }}>Delete?</span>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '8px' }}>
+              <span onClick={confirmDelete} style={{ fontSize: '13px', color: '#f87171', cursor: 'pointer' }}>Yes</span>
+              <span onClick={() => setStep('title')} style={{ fontSize: '13px', color: GRAY_500, cursor: 'pointer' }}>No</span>
+            </div>
+          </div>
+        )}
+
+        {step === 'title' && (
+          <input
+            ref={inputRef}
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Task name..."
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              fontSize: '14px',
+              color: WHITE,
+              outline: 'none',
+            }}
+            onKeyDown={handleKeyDown}
+          />
+        )}
+
+        {step === 'description' && (
+          <input
+            ref={inputRef}
+            type="text"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Add description..."
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              fontSize: '14px',
+              color: WHITE,
+              outline: 'none',
+            }}
+            onKeyDown={handleKeyDown}
+          />
+        )}
+
+        {step === 'status' && (
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {STATUSES.map(s => (
+              <span
+                key={s.value}
+                onClick={() => { setStatus(s.value); saveAndClose(); }}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  color: status === s.value ? WHITE : GRAY_500,
+                  cursor: 'pointer',
+                  borderRadius: '6px',
+                  backgroundColor: status === s.value ? GRAY_700 : 'transparent',
+                }}
+                onMouseEnter={e => status !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
+                onMouseLeave={e => status !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}
+              >
+                {s.label}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        padding: '14px',
+        backgroundColor: GRAY_900,
+        borderRadius: '10px',
+        cursor: 'move',
+        transition: 'background-color 0.2s',
+      }}
+      {...(dragAttributes || {})}
+      {...(dragListeners || {})}
+      onClick={() => { setIsEditing(true); setStep('title'); setShowDesc(!!task.description); }}
+      onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
+      onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}
+    >
+      <div style={{ fontSize: '14px', fontWeight: 500, color: WHITE, marginBottom: task.description ? '4px' : 0 }}>
+        {task.title}
+      </div>
+      {task.description && (
+        <div style={{ fontSize: '13px', color: GRAY_500 }}>{task.description}</div>
+      )}
+      {task.tags.length > 0 && (
+        <div style={{ marginTop: '8px', display: 'flex', gap: '4px' }}>
+          {task.tags.map(tag => (
+            <span key={tag.id} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: WHITE, backgroundColor: tag.color }}>
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+```
+```
+The file /Users/ankur/D/Playground/my-trello/components/TaskCard.tsx has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
+     1→"use client";
+     2→
+     3→import { useState, useRef, useEffect, MouseEvent, useCallback } from "react";
+     4→import { useSortable } from "@dnd-kit/sortable";
+     5→import { CSS } from "@dnd-kit/utilities";
+     6→import { Task, TaskStatus } from "@/lib/types";
+     7→
+     8→interface TaskCardProps {
+     9→  task: Task;
+    10→  availableTags: Array<{ id: number; name: string; color: string; taskCount: number }>;
+    11→  onUpdate: (id: number, data: { title: string; description: string; status: TaskStatus; tags: string[] }) => void;
+    12→  onDelete: (id: number) => void;
+    13→  dragAttributes?: any;
+    14→  dragListeners?: any;
+    15→}
+    16→
+    17→const STATUSES = [
+    18→  { value: "not_started" as TaskStatus, label: "To Do" },
+    19→  { value: "in_progress" as TaskStatus, label: "In Progress" },
+    20→  { value: "complete" as TaskStatus, label: "Done" },
+    21→];
+    22→
+    23→const GRAY_900 = "#0a0a0a";
+    24→const GRAY_800 = "#171717";
+    25→const GRAY_700 = "#262626";
+    26→const GRAY_600 = "#404060";
+    27→const GRAY_500 = "#525252";
+    28→const GRAY_400 = "#737373";
+    29→const WHITE = "#ffffff";
+    30→
+    31→export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dragListeners }: TaskCardProps) {
+    32→  const [isEditing, setIsEditing] = useState(false);
+    33→  const [title, setTitle] = useState(task.title);
+    34→  const [description, setDescription] = useState(task.description || "");
+    35→  const [status, setStatus] = useState<TaskStatus>(task.status);
+    36→  const [step, setStep] = useState<'title' | 'description' | 'status' | 'delete'>('title');
+    37→  const [showDesc, setShowDesc] = useState(false);
+    38→  const containerRef = useRef<HTMLDivElement>(null);
+    39→  const inputRef = useRef<HTMLInputElement>(null);
+    40→
+    41→  useEffect(() => {
+    42→    if (isEditing) {
+    43→      inputRef.current?.focus();
+    44→      inputRef.current?.select();
+    45→    }
+    46→  }, [isEditing, step]);
+    47→
+    48→  const {
+    49→    attributes,
+    50→    listeners,
+    51→    setNodeRef,
+    52→    transform,
+    53→    transition,
+    54→    isDragging,
+    55→  } = useSortable({
+    56→    id: task.id.toString(),
+    57→    data: { status: task.status },
+    58→    disabled: isEditing,
+    59→  });
+    60→
+    61→  const style = {
+    62→    transform: CSS.Transform.toString(transform),
+    63→    transition,
+    64→    opacity: isDragging ? 0.5 : 1,
+    65→  };
+    66→
+    67→  const saveAndClose = useCallback(async () => {
+    68→    if (!title.trim()) return;
+    69→    await onUpdate(task.id, { title: title.trim(), description: description.trim(), status, tags: [] });
+    70→    setIsEditing(false);
+    71→  }, [title, description, status, task.id, onUpdate]);
+    72→
+    73→  const handleClickOutside = useCallback((e: MouseEvent) => {
+    74→    if (!isEditing || !containerRef.current) return;
+    75→    if (containerRef.current.contains(e.target as Node)) return;
+    76→    if (step === 'delete') return;
+    77→    saveAndClose();
+    78→  }, [isEditing, step, saveAndClose]);
+    79→
+    80→  useEffect(() => {
+    81→    if (isEditing) {
+    82→      document.addEventListener('mousedown', handleClickOutside as any);
+    83→      return () => document.removeEventListener('mousedown', handleClickOutside as any);
+    84→    }
+    85→  }, [isEditing, handleClickOutside]);
+    86→
+    87→  const handleKeyDown = (e: React.KeyboardEvent) => {
+    88→    if (e.key === 'Enter') {
+    89→      e.preventDefault();
+    90→      if (step === 'title') {
+    91→        if (title.trim()) {
+    92→          setShowDesc(true);
+    93→          setStep('description');
+    94→        }
+    95→      } else if (step === 'description') {
+    96→        setStep('status');
+    97→      } else if (step === 'status') {
+    98→        saveAndClose();
+    99→      }
+   100→    } else if (e.key === 'Escape') {
+   101→      setIsEditing(false);
+   102→      setTitle(task.title);
+   103→      setDescription(task.description || "");
+   104→      setStatus(task.status);
+   105→      setShowDesc(false);
+   106→      setStep('title');
+   107→    } else if (e.key === 'Backspace' && !title && step === 'title') {
+   108→      setStep('delete');
+   109→    }
+   110→  };
+   111→
+   112→  const confirmDelete = () => {
+   113→    onDelete(task.id);
+   114→  };
+   115→
+   116→  if (isEditing) {
+   117→    return (
+   118→      <div ref={containerRef} style={{ ...style, padding: '12px', backgroundColor: GRAY_900, borderRadius: '10px' }}>
+   119→        {step === 'delete' && (
+   120→          <div style={{ textAlign: 'center', padding: '8px 0' }}>
+   121→            <span style={{ fontSize: '13px', color: GRAY_500 }}>Delete?</span>
+   122→            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '8px' }}>
+   123→              <span onClick={confirmDelete} style={{ fontSize: '13px', color: '#f87171', cursor: 'pointer' }}>Yes</span>
+   124→              <span onClick={() => setStep('title')} style={{ fontSize: '13px', color: GRAY_500, cursor: 'pointer' }}>No</span>
+   125→            </div>
+   126→          </div>
+   127→        )}
+   128→
+   129→        {step === 'title' && (
+   130→          <input
+   131→            ref={inputRef}
+   132→            type="text"
+   133→            value={title}
+   134→            onChange={e => setTitle(e.target.value)}
+   135→            placeholder="Task name..."
+   136→            style={{
+   137→              width: '100%',
+   138→              padding: '10px 12px',
+   139→              backgroundColor: 'transparent',
+   140→              border: 'none',
+   141→              fontSize: '14px',
+   142→              color: WHITE,
+   143→              outline: 'none',
+   144→            }}
+   145→            onKeyDown={handleKeyDown}
+   146→          />
+   147→        )}
+   148→
+   149→        {step === 'description' && (
+   150→          <input
+   151→            ref={inputRef}
+   152→            type="text"
+   153→            value={description}
+   154→            onChange={e => setDescription(e.target.value)}
+   155→            placeholder="Add description..."
+   156→            style={{
+   157→              width: '100%',
+   158→              padding: '10px 12px',
+   159→              backgroundColor: 'transparent',
+   160→              border: 'none',
+   161→              fontSize: '14px',
+   162→              color: WHITE,
+   163→              outline: 'none',
+   164→            }}
+   165→            onKeyDown={handleKeyDown}
+   166→          />
+   167→        )}
+   168→
+   169→        {step === 'status' && (
+   170→          <div style={{ display: 'flex', gap: '4px' }}>
+   171→            {STATUSES.map(s => (
+   172→              <span
+   173→                key={s.value}
+   174→                onClick={() => { setStatus(s.value); saveAndClose(); }}
+   175→                style={{
+   176→                  padding: '6px 12px',
+   177→                  fontSize: '12px',
+   178→                  color: status === s.value ? WHITE : GRAY_500,
+   179→                  cursor: 'pointer',
+   180→                  borderRadius: '6px',
+   181→                  backgroundColor: status === s.value ? GRAY_700 : 'transparent',
+   182→                }}
+   183→                onMouseEnter={e => status !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
+   184→                onMouseLeave={e => status !== s.value && Object.assign(e.currentTarget.style, { backgroundColor: 'transparent' })}
+   185→              >
+   186→                {s.label}
+   187→              </span>
+   188→            ))}
+   189→          </div>
+   190→        )}
+   191→      </div>
+   192→    );
+   193→  }
+   194→
+   195→  return (
+   196→    <div
+   197→      ref={setNodeRef}
+   198→      style={{
+   199→        ...style,
+   200→        padding: '14px',
+   201→        backgroundColor: GRAY_900,
+   202→        borderRadius: '10px',
+   203→        cursor: 'move',
+   204→        transition: 'background-color 0.2s',
+   205→      }}
+   206→      {...(dragAttributes || {})}
+   207→      {...(dragListeners || {})}
+   208→      onClick={() => { setIsEditing(true); setStep('title'); setShowDesc(!!task.description); }}
+   209→      onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
+   210→      onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}
+   211→    >
+   212→      <div style={{ fontSize: '14px', fontWeight: 500, color: WHITE, marginBottom: task.description ? '4px' : 0 }}>
+   213→        {task.title}
+   214→      </div>
+   215→      {task.description && (
+   216→        <div style={{ fontSize: '13px', color: GRAY_500 }}>{task.description}</div>
+   217→      )}
+   218→      {task.tags.length > 0 && (
+   219→        <div style={{ marginTop: '8px', display: 'flex', gap: '4px' }}>
+   220→          {task.tags.map(tag => (
+   221→            <span key={tag.id} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: WHITE, backgroundColor: tag.color }}>
+   222→              {tag.name}
+   223→            </span>
+   224→          ))}
+   225→        </div>
+   226→      )}
+   227→    </div>
+   228→  );
+   229→}
+   230→
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:33:30.159Z)**_
+
+Now let me also make the create flow equally minimal - just one field at a time:
+
+_**Agent (glm-4.7 2026-01-19T17:33:30.207Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+```
+The file /Users/ankur/D/Playground/my-trello/components/Board.tsx has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:33:32.503Z)**_
+
+Now let me also clean up the auth pages to match the bold minimal aesthetic and remove the unused TaskColumn file:
+
+_**Agent (glm-4.7 2026-01-19T17:33:32.539Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Remove unused TaskColumn component
+
+`rm -f /Users/ankur/D/Playground/my-trello/components/TaskColumn.tsx`
+</details></tool-use>
+
+_**Agent (glm-4.7 2026-01-19T17:33:35.143Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build to verify
+
+`npm run build 2>&1 | tail -10`
+```
+└ ○ /auth/signup                         1.63 kB         107 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/255-cb395327542b56ef.js       45.9 kB
+  ├ chunks/4bd1b696-c023c6e3521b1417.js  54.2 kB
+  └ other shared chunks (total)          1.92 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+```
+</details></tool-use>

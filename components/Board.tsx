@@ -562,7 +562,7 @@ function Column({
   );
 }
 
-// MINIMAL Task Creation - Single input, reveals description only after title
+// MINIMAL Task Creation - One field at a time
 function MinimalTaskCreate({
   onSave,
   onCancel,
@@ -573,13 +573,13 @@ function MinimalTaskCreate({
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [showDescription, setShowDescription] = useState(false);
+  const [step, setStep] = useState<'title' | 'description'>('title');
   const containerRef = useRef<HTMLDivElement>(null);
-  const titleInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    titleInputRef.current?.focus();
-  }, []);
+    inputRef.current?.focus();
+  }, [step]);
 
   const handleSubmit = useCallback(() => {
     if (title.trim()) {
@@ -602,57 +602,57 @@ function MinimalTaskCreate({
     return () => document.removeEventListener('mousedown', handleClickOutside as any);
   }, [handleClickOutside]);
 
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTitle(e.target.value);
-    if (e.target.value && !showDescription) {
-      setShowDescription(true);
-    }
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      handleSubmit();
+      if (step === 'title' && title.trim()) {
+        setStep('description');
+      } else if (step === 'description') {
+        handleSubmit();
+      }
     } else if (e.key === 'Escape') {
       onCancel();
     }
   };
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        padding: '8px 0',
-        animation: 'fadeIn 0.15s ease-out',
-      }}
-    >
-      <input
-        ref={titleInputRef}
-        type="text"
-        value={title}
-        onChange={handleTitleChange}
-        placeholder="Task name..."
-        style={{
-          ...styles.minimalInput,
-          ...(title ? {} : styles.minimalInputPlaceholder),
-        }}
-        onKeyDown={handleKeyDown}
-      />
-      {showDescription && (
+    <div ref={containerRef} style={{ padding: '8px 12px', animation: 'fadeIn 0.15s' }}>
+      {step === 'title' && (
         <input
+          ref={inputRef}
           type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Add description..."
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          placeholder="New task..."
           style={{
-            ...styles.minimalInput,
-            fontSize: '13px',
-            marginTop: '4px',
-            ...(description ? {} : { color: GRAY_600 }),
+            width: '100%',
+            padding: '10px 0',
+            backgroundColor: 'transparent',
+            border: 'none',
+            fontSize: '14px',
+            color: WHITE,
+            outline: 'none',
           }}
           onKeyDown={handleKeyDown}
-          onFocus={(e) => Object.assign(e.currentTarget.style, { color: WHITE })}
-          onBlur={(e) => !description && Object.assign(e.currentTarget.style, { color: GRAY_600 })}
+        />
+      )}
+      {step === 'description' && (
+        <input
+          ref={inputRef}
+          type="text"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          placeholder="Add description..."
+          style={{
+            width: '100%',
+            padding: '10px 0',
+            backgroundColor: 'transparent',
+            border: 'none',
+            fontSize: '14px',
+            color: WHITE,
+            outline: 'none',
+          }}
+          onKeyDown={handleKeyDown}
         />
       )}
     </div>
