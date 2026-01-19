@@ -221,19 +221,19 @@ export default function SignUpPage() {
             </div>
 
             <h1 style={{
-              fontSize: '88px',
+              fontSize: '104px',
               fontWeight: 900,
-              background: `linear-gradient(135deg, ${C.black} 0%, ${C.indigo} 25%, ${C.purple} 50%, ${C.pink} 75%, ${C.black} 100%)`,
-              backgroundSize: '300% 300%',
+              background: `linear-gradient(90deg, ${C.black} 0%, ${C.indigo} 20%, ${C.violet} 40%, ${C.purple} 60%, ${C.pink} 80%, ${C.rose} 100%)`,
+              backgroundSize: '500% 100%',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              letterSpacing: '-0.08em',
-              lineHeight: 0.95,
-              marginBottom: '20px',
+              letterSpacing: '-0.1em',
+              lineHeight: 0.9,
+              marginBottom: '24px',
               textTransform: 'uppercase',
-              animation: 'gradientShift 2.5s ease infinite',
-              filter: 'drop-shadow(0 6px 16px rgba(0,0,0,0.3))',
+              animation: 'gradientShift 1.8s ease infinite',
+              filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.4))',
             }}>
               TicTac
             </h1>

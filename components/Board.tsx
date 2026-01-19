@@ -351,124 +351,124 @@ export default function Board() {
       <header style={{
         position: 'relative',
         zIndex: 10,
-        padding: '48px 64px',
-        background: 'rgba(255, 255, 255, 0.9)',
-        backdropFilter: 'blur(25px)',
-        borderBottom: `5px solid ${C.black}`,
-        boxShadow: '0 15px 50px rgba(0,0,0,0.15)',
+        padding: '56px 72px',
+        background: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(30px)',
+        borderBottom: `6px solid ${C.black}`,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
       }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          maxWidth: '1900px',
+          maxWidth: '2000px',
           margin: '0 auto',
         }}>
           {/* Logo - DRAMATIC */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '32px',
+            gap: '36px',
           }}>
             <div style={{
-              width: '112px',
-              height: '112px',
-              background: `linear-gradient(135deg, ${C.indigo} 0%, ${C.purple} 50%, ${C.pink} 100%)`,
-              borderRadius: '32px',
+              width: '128px',
+              height: '128px',
+              background: `linear-gradient(135deg, ${C.indigo} 0%, ${C.violet} 33%, ${C.purple} 66%, ${C.pink} 100%)`,
+              borderRadius: '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: `0 25px 80px ${C.purple}60`,
-              animation: 'logoPulse 1.5s ease-in-out infinite',
+              boxShadow: `0 30px 90px ${C.purple}70`,
+              animation: 'logoPulse 1.2s ease-in-out infinite',
               position: 'relative',
             }}>
               <div style={{
                 position: 'absolute',
-                inset: -8,
-                borderRadius: '36px',
-                background: `linear-gradient(135deg, ${C.purple}, ${C.pink}, ${C.rose})`,
-                opacity: 0.5,
-                animation: 'pulseRing 1.2s ease-out infinite',
+                inset: -10,
+                borderRadius: '40px',
+                background: `linear-gradient(135deg, ${C.indigo}, ${C.violet}, ${C.purple}, ${C.pink}, ${C.rose})`,
+                opacity: 0.6,
+                animation: 'pulseRing 0.9s ease-out infinite',
               }} />
-              <SparklesIcon style={{ width: '60px', height: '60px', color: C.white, filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))' }} />
+              <SparklesIcon style={{ width: '68px', height: '68px', color: C.white, filter: 'drop-shadow(0 3px 10px rgba(0,0,0,0.4))' }} />
             </div>
 
             <div>
               <h1 style={{
-                fontSize: '96px',
+                fontSize: '112px',
                 fontWeight: 900,
-                background: `linear-gradient(135deg, ${C.black} 0%, ${C.indigo} 25%, ${C.purple} 50%, ${C.pink} 75%, ${C.black} 100%)`,
-                backgroundSize: '400% 400%',
+                background: `linear-gradient(90deg, ${C.black} 0%, ${C.indigo} 20%, ${C.violet} 40%, ${C.purple} 60%, ${C.pink} 80%, ${C.rose} 100%)`,
+                backgroundSize: '500% 100%',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
-                letterSpacing: '-0.12em',
-                lineHeight: 0.9,
+                letterSpacing: '-0.14em',
+                lineHeight: 0.85,
                 textTransform: 'uppercase',
-                animation: 'gradientShift 2s ease infinite',
-                filter: 'drop-shadow(0 6px 16px rgba(0,0,0,0.4))',
+                animation: 'gradientShift 1.5s ease infinite',
+                filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.5))',
               }}>
                 TicTac
               </h1>
 
               <div style={{
                 display: 'flex',
-                gap: '14px',
-                marginTop: '16px',
+                gap: '16px',
+                marginTop: '20px',
                 flexWrap: 'wrap',
               }}>
                 {/* Stats badges */}
                 <div style={{
-                  padding: '12px 24px',
-                  background: `linear-gradient(135deg, ${C.indigo}, ${C.purple})`,
+                  padding: '14px 28px',
+                  background: `linear-gradient(135deg, ${C.indigo}, ${C.violet}, ${C.purple})`,
                   borderRadius: '50px',
-                  fontSize: '18px',
+                  fontSize: '20px',
                   fontWeight: 900,
                   color: C.white,
-                  letterSpacing: '0.18em',
+                  letterSpacing: '0.2em',
                   textTransform: 'uppercase',
-                  border: `4px solid ${C.purple}`,
+                  border: `5px solid ${C.purple}`,
                   transition: 'all 0.3s ease',
-                  boxShadow: `0 8px 30px ${C.purple}60`,
-                  animation: 'badgePulse 2s ease-in-out infinite',
+                  boxShadow: `0 10px 35px ${C.purple}70`,
+                  animation: 'badgePulse 1.5s ease-in-out infinite',
                 }}>
                   {totalTasks} Tasks
                 </div>
 
                 {taskCounts.in_progress > 0 && (
                   <div style={{
-                    padding: '12px 24px',
-                    background: `linear-gradient(135deg, ${C.orange}, ${C.red})`,
+                    padding: '14px 28px',
+                    background: `linear-gradient(135deg, ${C.orange}, ${C.red}, ${C.rose})`,
                     borderRadius: '50px',
-                    fontSize: '18px',
+                    fontSize: '20px',
                     fontWeight: 900,
                     color: C.white,
-                    letterSpacing: '0.18em',
+                    letterSpacing: '0.2em',
                     textTransform: 'uppercase',
-                    boxShadow: `0 8px 30px ${C.orange}60`,
-                    animation: 'badgePulse 1.5s ease-in-out infinite',
+                    boxShadow: `0 10px 35px ${C.red}70`,
+                    animation: 'badgePulse 1.2s ease-in-out infinite',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    border: `4px solid ${C.red}`,
+                    gap: '12px',
+                    border: `5px solid ${C.rose}`,
                   }}>
-                    <FireIcon style={{ width: '20px', height: '20px' }} />
+                    <FireIcon style={{ width: '22px', height: '22px' }} />
                     {taskCounts.in_progress} Active
                   </div>
                 )}
 
                 {completionRate > 0 && (
                   <div style={{
-                    padding: '10px 20px',
-                    background: `linear-gradient(135deg, ${C.emerald}, ${C.teal})`,
+                    padding: '12px 24px',
+                    background: `linear-gradient(135deg, ${C.emerald}, ${C.teal}, ${C.cyan})`,
                     borderRadius: '50px',
-                    fontSize: '16px',
+                    fontSize: '18px',
                     fontWeight: 900,
                     color: C.white,
-                    letterSpacing: '0.12em',
+                    letterSpacing: '0.15em',
                     textTransform: 'uppercase',
-                    boxShadow: `0 6px 25px ${C.emerald}50`,
-                    border: `3px solid ${C.teal}`,
+                    boxShadow: `0 8px 30px ${C.teal}60`,
+                    border: `4px solid ${C.cyan}`,
                   }}>
                     {completionRate}% Complete
                   </div>
@@ -912,40 +912,40 @@ function Column({ status, label, gradient, accent, tasks, onDelete, onUpdate, on
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '24px',
-        padding: '20px 24px',
+        marginBottom: '28px',
+        padding: '24px 28px',
         background: gradient,
-        borderRadius: '24px',
-        boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
-        border: '4px solid rgba(0,0,0,0.15)',
+        borderRadius: '28px',
+        boxShadow: '0 15px 50px rgba(0,0,0,0.25)',
+        border: '5px solid rgba(0,0,0,0.2)',
       }}>
         <div style={{
-          fontSize: '16px',
+          fontSize: '18px',
           fontWeight: 900,
           color: C.white,
-          letterSpacing: '0.25em',
+          letterSpacing: '0.3em',
           textTransform: 'uppercase',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
-          textShadow: '0 3px 6px rgba(0,0,0,0.4)',
+          gap: '14px',
+          textShadow: '0 4px 8px rgba(0,0,0,0.5)',
         }}>
           <span style={{
-            width: '14px',
-            height: '14px',
+            width: '16px',
+            height: '16px',
             borderRadius: '50%',
             background: accent,
-            boxShadow: `0 0 18px ${accent}`,
-            animation: 'pulse 2s ease-in-out infinite',
+            boxShadow: `0 0 24px ${accent}`,
+            animation: 'pulse 1.5s ease-in-out infinite',
           }} />
           {label}
         </div>
         <div style={{
-          fontSize: '36px',
+          fontSize: '42px',
           fontWeight: 900,
           color: C.white,
-          textShadow: '0 3px 6px rgba(0,0,0,0.4)',
-          letterSpacing: '-0.02em',
+          textShadow: '0 4px 8px rgba(0,0,0,0.5)',
+          letterSpacing: '-0.03em',
         }}>
           {tasks.length}
         </div>
@@ -955,14 +955,14 @@ function Column({ status, label, gradient, accent, tasks, onDelete, onUpdate, on
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '16px',
-        padding: '24px',
-        borderRadius: '28px',
-        background: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(15px)',
-        border: '4px solid rgba(0,0,0,0.12)',
-        minHeight: '420px',
-        boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
+        gap: '18px',
+        padding: '28px',
+        borderRadius: '32px',
+        background: 'rgba(255, 255, 255, 0.98)',
+        backdropFilter: 'blur(20px)',
+        border: '5px solid rgba(0,0,0,0.15)',
+        minHeight: '450px',
+        boxShadow: '0 15px 50px rgba(0,0,0,0.15)',
       }}>
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {tasks.map(task => (
@@ -1132,17 +1132,17 @@ function TaskItem({ task, onDelete, onUpdate, isEditing, setEditingId, isHovered
         {...(isEditing ? {} : attributes)}
         {...(isEditing ? {} : listeners)}
         style={{
-          padding: '22px 28px',
-          borderRadius: '20px',
+          padding: '26px 32px',
+          borderRadius: '24px',
           background: isHovered && !isEditing ? C.gray100 : C.white,
-          border: task.status === "in_progress" ? `4px solid ${C.gray700}` : `4px solid ${isHovered ? (task.status === "complete" ? C.teal : C.indigo) : C.gray200}`,
+          border: task.status === "in_progress" ? `5px solid ${C.gray700}` : `5px solid ${isHovered ? (task.status === "complete" ? C.teal : C.indigo) : C.gray200}`,
           cursor: isEditing ? 'text' : 'grab',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: isPressed ? 'scale(0.96)' : isHovered ? 'scale(1.03)' : 'scale(1)',
+          transform: isPressed ? 'scale(0.96)' : isHovered ? 'scale(1.04)' : 'scale(1)',
           display: 'flex',
           alignItems: 'center',
-          gap: '16px',
-          boxShadow: isHovered && task.status === "in_progress" ? '0 12px 40px rgba(0,0,0,0.2)' : (isHovered ? `0 12px 40px ${task.status === "complete" ? C.teal : C.indigo}30` : '0 3px 12px rgba(0,0,0,0.08)'),
+          gap: '18px',
+          boxShadow: isHovered && task.status === "in_progress" ? '0 15px 50px rgba(0,0,0,0.25)' : (isHovered ? `0 15px 50px ${task.status === "complete" ? C.teal : C.indigo}40` : '0 4px 15px rgba(0,0,0,0.1)'),
         }}
         onClick={() => !isEditing && setEditingId(task.id)}
       >
@@ -1165,18 +1165,18 @@ function TaskItem({ task, onDelete, onUpdate, isEditing, setEditingId, isHovered
           contentEditable={isEditing}
           suppressContentEditableWarning
           style={{
-            fontSize: '19px',
-            fontWeight: isEditing ? 900 : 900,
+            fontSize: '21px',
+            fontWeight: 900,
             color: task.status === "complete" ? C.gray500 : C.black,
             outline: 'none',
             cursor: isEditing ? 'text' : 'inherit',
             userSelect: isEditing ? 'text' : 'none',
             flex: 1,
-            minHeight: '32px',
+            minHeight: '36px',
             wordBreak: 'break-word',
-            letterSpacing: '0.03em',
+            letterSpacing: '0.04em',
             textTransform: isEditing ? 'uppercase' : 'none',
-            lineHeight: 1.3,
+            lineHeight: 1.25,
           }}
           onInput={e => setTitle(e.currentTarget.textContent || "")}
         >
@@ -1188,26 +1188,26 @@ function TaskItem({ task, onDelete, onUpdate, isEditing, setEditingId, isHovered
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
             style={{
-              width: '38px',
-              height: '38px',
+              width: '44px',
+              height: '44px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: C.gray400,
               background: C.gray100,
-              border: '3px solid C.gray300',
-              borderRadius: '12px',
+              border: '4px solid C.gray300',
+              borderRadius: '14px',
               cursor: 'pointer',
-              fontSize: '24px',
+              fontSize: '28px',
               fontWeight: 900,
               transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
             onMouseEnter={e => Object.assign(e.currentTarget.style, {
               color: C.white,
-              background: `linear-gradient(135deg, ${C.red}, ${C.rose})`,
+              background: `linear-gradient(135deg, ${C.red}, ${C.rose}, ${C.pink})`,
               borderColor: C.red,
-              transform: 'scale(1.15) rotate(90deg)',
-              boxShadow: `0 6px 20px ${C.red}50`,
+              transform: 'scale(1.2) rotate(90deg)',
+              boxShadow: `0 8px 25px ${C.red}60`,
             })}
             onMouseLeave={e => Object.assign(e.currentTarget.style, {
               color: C.gray400,
