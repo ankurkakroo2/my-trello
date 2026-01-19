@@ -14,16 +14,17 @@ interface TaskCardProps {
   dragListeners?: any;
 }
 
+const BLACK = "#000000";
 const GRAY_900 = "#0a0a0a";
 const GRAY_800 = "#171717";
 const GRAY_700 = "#262626";
 const GRAY_500 = "#525252";
+const GRAY_400 = "#737373";
 const WHITE = "#ffffff";
 
 export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dragListeners }: TaskCardProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState(task.title);
-  const [desc, setDesc] = useState(task.description || "");
+  const [text, setText] = useState(task.title);
   const inputRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -35,30 +36,40 @@ export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dra
     isDragging,
   } = useSortable({ id: task.id.toString(), data: { status: task.status }, disabled: isEditing });
 
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
 
   const save = useCallback(() => {
-    if (!title.trim()) return;
-    onUpdate(task.id, { title: title.trim(), description: desc.trim(), status: task.status, tags: [] });
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    onUpdate(task.id, { title: trimmed, description: "", status: task.status, tags: [] });
     setIsEditing(false);
-  }, [title, desc, task.id, task.status, onUpdate]);
+  }, [text, task.id, task.status, onUpdate]);
 
-  // Click to edit
+  const cancel = useCallback(() => {
+    setIsEditing(false);
+    setText(task.title);
+  }, [task.title]);
+
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      // Select all text
+      // Place cursor at end
       const range = document.createRange();
       const sel = window.getSelection();
-      if (inputRef.current.firstChild && sel) {
-        range.selectNodeContents(inputRef.current.firstChild);
+      if (inputRef.current.childNodes.length > 0 && sel) {
+        const lastNode = inputRef.current.childNodes[inputRef.current.childNodes.length - 1];
+        range.setStartAfter(lastNode);
+        range.collapse(true);
         sel.removeAllRanges();
         sel.addRange(range);
       }
     }
   }, [isEditing]);
 
-  // Click outside to save
   useEffect(() => {
     if (!isEditing) return;
     const handleClick = (e: MouseEvent) => {
@@ -66,85 +77,60 @@ export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dra
         save();
       }
     };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') cancel();
+    };
     document.addEventListener('mousedown', handleClick as any);
-    return () => document.removeEventListener('mousedown', handleClick as any);
-  }, [isEditing, save]);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClick as any);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isEditing, save, cancel]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       save();
-    } else if (e.key === 'Escape') {
-      setIsEditing(false);
-      setTitle(task.title);
-      setDesc(task.description || "");
     }
   };
 
-  // Inline edit mode - card becomes input
-  if (isEditing) {
-    return (
-      <div
-        ref={setNodeRef}
-        style={{
-          ...style,
-          padding: '14px',
-          backgroundColor: GRAY_800,
-          borderRadius: '10px',
-          outline: '2px solid WHITE',
-          outlineOffset: '-2px',
-        }}
-        {...(dragAttributes || {})}
-        {...(dragListeners || {})}
-      >
-        <div
-          ref={inputRef}
-          contentEditable
-          suppressContentEditableWarning
-          style={{ fontSize: '14px', fontWeight: 500, color: WHITE, minHeight: '20px' }}
-          onInput={e => setTitle(e.currentTarget.textContent || "")}
-          onKeyDown={handleKeyDown}
-        >
-          {title}
-        </div>
-        {task.description && (
-          <div
-            contentEditable
-            suppressContentEditableWarning
-            style={{ fontSize: '13px', color: GRAY_500, marginTop: '4px' }}
-            onInput={e => setDesc(e.currentTarget.textContent || "")}
-          >
-            {task.description}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Normal card
+  // Just one editable field - ultra minimal
   return (
     <div
       ref={setNodeRef}
       style={{
         ...style,
-        padding: '14px',
-        backgroundColor: GRAY_900,
-        borderRadius: '10px',
-        cursor: 'move',
-        transition: 'background-color 0.2s',
+        padding: '12px 16px',
+        backgroundColor: isEditing ? GRAY_800 : GRAY_900,
+        borderRadius: '8px',
+        borderLeft: isEditing ? '2px solid WHITE' : '2px solid transparent',
+        cursor: isEditing ? 'text' : 'grab',
+        transition: 'all 0.15s ease',
       }}
-      {...(dragAttributes || {})}
-      {...(dragListeners || {})}
-      onClick={() => setIsEditing(true)}
-      onMouseEnter={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 })}
-      onMouseLeave={e => Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 })}
+      {...(isEditing ? {} : dragAttributes)}
+      {...(isEditing ? {} : dragListeners)}
+      onClick={() => !isEditing && setIsEditing(true)}
+      onMouseEnter={e => { if (!isEditing) Object.assign(e.currentTarget.style, { backgroundColor: GRAY_800 }); }}
+      onMouseLeave={e => { if (!isEditing) Object.assign(e.currentTarget.style, { backgroundColor: GRAY_900 }); }}
     >
-      <div style={{ fontSize: '14px', fontWeight: 500, color: WHITE }}>
+      <div
+        ref={inputRef}
+        contentEditable={isEditing}
+        suppressContentEditableWarning
+        style={{
+          fontSize: '14px',
+          fontWeight: 500,
+          color: WHITE,
+          outline: 'none',
+          minHeight: '20px',
+          lineHeight: '1.4',
+        }}
+        onInput={e => setText(e.currentTarget.textContent || "")}
+        onKeyDown={handleKeyDown}
+      >
         {task.title}
       </div>
-      {task.description && (
-        <div style={{ fontSize: '13px', color: GRAY_500 }}>{task.description}</div>
-      )}
     </div>
   );
 }
