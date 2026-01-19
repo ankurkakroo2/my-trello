@@ -225,26 +225,26 @@ export default function Board() {
           )}
         </DndContext>
 
-        {/* Single input at bottom - no border, just text */}
+        {/* Minimal create - nothing visible until focused */}
         <div
           ref={inputRef}
           contentEditable
           suppressContentEditableWarning
           onFocus={() => setIsFocused(true)}
           style={{
-            fontSize: '16px',
+            fontSize: '15px',
             fontWeight: 400,
-            color: BLACK,
+            color: newTaskTitle ? BLACK : GRAY_400,
             outline: 'none',
-            marginTop: '24px',
-            padding: '14px 0',
+            marginTop: '32px',
+            padding: '8px 4px',
             cursor: 'text',
-            opacity: newTaskTitle || isFocused ? 1 : 0.5,
+            minHeight: '20px',
+            opacity: newTaskTitle || isFocused ? 1 : 0,
             transition: 'opacity 0.2s',
-            borderBottom: isFocused ? '2px solid BLACK' : '2px solid transparent',
           }}
           onInput={e => setNewTaskTitle(e.currentTarget.textContent || "")}
-        >{newTaskTitle || "+ Add a task..."}</div>
+        >{newTaskTitle || (isFocused ? "" : "Type to add a task...")}</div>
       </main>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

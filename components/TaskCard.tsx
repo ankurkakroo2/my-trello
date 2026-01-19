@@ -99,7 +99,7 @@ export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dra
     }
   };
 
-  // White card with subtle border
+  // White card - looks the same whether editing or not
   return (
     <div
       ref={setNodeRef}
@@ -107,11 +107,10 @@ export default function TaskCard({ task, onUpdate, onDelete, dragAttributes, dra
         ...style,
         padding: '16px 18px',
         backgroundColor: WHITE,
-        border: isEditing ? '2px solid BLACK' : '1px solid #e5e5e5',
+        border: '1px solid #e5e5e5',
         borderRadius: '12px',
         cursor: isEditing ? 'text' : 'grab',
         transition: 'all 0.2s ease',
-        boxShadow: isEditing ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
       }}
       {...(isEditing ? {} : dragAttributes)}
       {...(isEditing ? {} : dragListeners)}
