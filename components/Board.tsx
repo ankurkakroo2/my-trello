@@ -51,7 +51,7 @@ export default function Board() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTag, setFilterTag] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [addingToColumn, setAddingToColumn] = useState<TaskStatus | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -112,12 +112,12 @@ export default function Board() {
     } catch { fetchTasks(); }
   };
 
-  const handleCreateTask = async (status: TaskStatus, title: string) => {
+  const handleCreateTask = async (title: string) => {
     if (!title.trim()) return;
     try {
       const response = await fetchWithRetry("/api/tasks", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), description: "", tags: [], status }),
+        body: JSON.stringify({ title: title.trim(), description: "", tags: [], status: "not_started" }),
       });
       if (!response.ok) throw new Error("Failed");
       const newTask = await response.json();
@@ -130,7 +130,7 @@ export default function Board() {
   if (isLoading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: BLACK }}><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: WHITE, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div></div>;
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: BLACK, fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", sans-serif' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: BLACK }}>
       {/* Header */}
       <header style={{ position: 'sticky', top: 0, zIndex: 40, backgroundColor: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', padding: '14px 20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -188,13 +188,22 @@ export default function Board() {
           {view === "board" ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
               {STATUSES.map(status => (
-                <Column key={status.value} status={status.value} label={status.label} tasks={tasksByStatus[status.value]} availableTags={tags} isAdding={addingToColumn === status.value} onAddStart={() => setAddingToColumn(status.value)} onAddCancel={() => setAddingToColumn(null)} onCreateTask={(title) => handleCreateTask(status.value, title)} />
+                <Column key={status.value} status={status.value} label={status.label} tasks={tasksByStatus[status.value]} availableTags={tags} />
               ))}
             </div>
           ) : (
             <ListView tasks={filteredTasks} tags={tags} />
           )}
         </DndContext>
+
+        {/* Single global create button at bottom */}
+        {isCreating ? (
+          <InlineCreate onSave={handleCreateTask} onCancel={() => setIsCreating(false)} />
+        ) : (
+          <div onClick={() => setIsCreating(true)} style={{ marginTop: '20px', padding: '14px 20px', color: GRAY_600, fontSize: '15px', cursor: 'text', textAlign: 'center', transition: 'color 0.2s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { color: GRAY_500 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { color: GRAY_600 })}>
+            + Add a task...
+          </div>
+        )}
       </main>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -202,10 +211,8 @@ export default function Board() {
   );
 }
 
-function Column({ status, label, tasks, availableTags, isAdding, onAddStart, onAddCancel, onCreateTask }: {
+function Column({ status, label, tasks, availableTags }: {
   status: TaskStatus; label: string; tasks: Task[]; availableTags: any[];
-  isAdding: boolean; onAddStart: () => void; onAddCancel: () => void;
-  onCreateTask: (title: string) => void;
 }) {
   const { setNodeRef } = useDroppable({ id: status, data: { status } });
   const taskIds = tasks.map(t => t.id.toString());
@@ -225,21 +232,12 @@ function Column({ status, label, tasks, availableTags, isAdding, onAddStart, onA
             <SortableTaskCard key={task.id} task={task} availableTags={availableTags} onUpdate={async (id: number, data: any) => { await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); }} onDelete={async (id: number) => { await fetch(`/api/tasks/${id}`, { method: "DELETE" }); window.location.reload(); }} />
           ))}
         </SortableContext>
-
-        {/* Inline create - just a placeholder */}
-        {isAdding ? (
-          <InlineCreate onSave={onCreateTask} onCancel={onAddCancel} />
-        ) : (
-          <div onClick={onAddStart} style={{ padding: '10px 16px', color: GRAY_600, fontSize: '14px', cursor: 'text', transition: 'color 0.15s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { color: GRAY_500 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { color: GRAY_600 })}>
-            + New task
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-// Ultra-minimal inline create - just text, no box visible
+// Single inline create - appears at bottom of page
 function InlineCreate({ onSave, onCancel }: { onSave: (title: string) => void; onCancel: () => void }) {
   const [title, setTitle] = useState("");
   const inputRef = useRef<HTMLDivElement>(null);
@@ -282,16 +280,18 @@ function InlineCreate({ onSave, onCancel }: { onSave: (title: string) => void; o
       contentEditable
       suppressContentEditableWarning
       style={{
-        fontSize: '14px',
+        fontSize: '15px',
         fontWeight: 400,
         color: WHITE,
         outline: 'none',
-        minHeight: '20px',
-        padding: '10px 16px',
+        minHeight: '22px',
+        padding: '14px 20px',
+        marginTop: '20px',
         cursor: 'text',
+        textAlign: 'center',
       }}
       onInput={e => setTitle(e.currentTarget.textContent || "")}
-    >{title || "New task..."}</div>
+    >{title || "Type a task name..."}</div>
   );
 }
 
