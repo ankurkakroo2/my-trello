@@ -14,7 +14,6 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import TaskCard from "./TaskCard";
 import { Task, TaskStatus } from "@/lib/types";
 import { fetchWithRetry } from "@/lib/utils";
 import { signOut } from "next-auth/react";
@@ -25,6 +24,8 @@ import {
   TagIcon,
   XMarkIcon,
   ArrowRightOnRectangleIcon,
+  PencilIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 
 const STATUSES: { value: TaskStatus; label: string }[] = [
@@ -53,12 +54,14 @@ export default function Board() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTag, setFilterTag] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editTitle, setEditTitle] = useState("");
   const filterRef = useRef<HTMLDivElement>(null);
-  const createRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLDivElement>(null);
+  const editInputRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -78,42 +81,75 @@ export default function Board() {
 
   useEffect(() => { fetchTasks(); fetchTags(); }, [fetchTasks]);
 
+  // Focus edit input when editing starts
+  useEffect(() => {
+    if (editingTask && editInputRef.current) {
+      editInputRef.current.focus();
+      // Select all text
+      const range = document.createRange();
+      const sel = window.getSelection();
+      if (editInputRef.current.firstChild && sel) {
+        range.selectNodeContents(editInputRef.current.firstChild);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+  }, [editingTask]);
+
+  // Handle click outside for filter dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) setShowFilterDropdown(false);
-      if (isCreating && createRef.current && !createRef.current.contains(e.target as Node)) {
-        if (newTaskTitle.trim()) {
-          handleCreateTask(newTaskTitle.trim());
-        }
-        setNewTaskTitle("");
-        setIsCreating(false);
-      }
-    };
-    const handleKeys = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isCreating) {
-        setNewTaskTitle("");
-        setIsCreating(false);
-      }
-      if (e.key === 'Enter' && isCreating && !e.shiftKey && newTaskTitle.trim()) {
-        e.preventDefault();
+      // Save new task on click outside
+      if (inputRef.current && !inputRef.current.contains(e.target as Node) && newTaskTitle.trim()) {
         handleCreateTask(newTaskTitle.trim());
         setNewTaskTitle("");
-        setIsCreating(false);
+      }
+      // Save edit on click outside
+      if (editingTask && editInputRef.current && !editInputRef.current.contains(e.target as Node)) {
+        saveEdit();
       }
     };
     document.addEventListener('mousedown', handleClickOutside as any);
-    document.addEventListener('keydown', handleKeys);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside as any);
-      document.removeEventListener('keydown', handleKeys);
-    };
-  }, [isCreating, newTaskTitle]);
+    return () => document.removeEventListener('mousedown', handleClickOutside as any);
+  }, [newTaskTitle, editingTask, editTitle]);
 
+  // Handle keyboard shortcuts
   useEffect(() => {
-    if (isCreating && createRef.current) {
-      createRef.current.focus();
-    }
-  }, [isCreating]);
+    const handleKeys = (e: KeyboardEvent) => {
+      // New task shortcuts
+      if (e.key === 'Enter' && !e.shiftKey && document.activeElement === inputRef.current && newTaskTitle.trim()) {
+        e.preventDefault();
+        handleCreateTask(newTaskTitle.trim());
+        setNewTaskTitle("");
+      }
+      // Edit shortcuts
+      if (e.key === 'Enter' && !e.shiftKey && editingTask && document.activeElement === editInputRef.current) {
+        e.preventDefault();
+        saveEdit();
+      }
+      if (e.key === 'Escape' && editingTask) {
+        setEditingTask(null);
+        setEditTitle("");
+      }
+    };
+    document.addEventListener('keydown', handleKeys);
+    return () => document.removeEventListener('keydown', handleKeys);
+  }, [newTaskTitle, editingTask, editTitle]);
+
+  const saveEdit = async () => {
+    if (!editingTask || !editTitle.trim()) return;
+    try {
+      await fetchWithRetry(`/api/tasks/${editingTask.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editTitle.trim(), description: "", status: editingTask.status, tags: [] }),
+      });
+      setTasks(tasks.map(t => t.id === editingTask.id ? { ...t, title: editTitle.trim() } : t));
+    } catch {}
+    setEditingTask(null);
+    setEditTitle("");
+  };
 
   const filteredTasks = tasks.filter(t =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -154,6 +190,13 @@ export default function Board() {
       if (!response.ok) throw new Error("Failed");
       const newTask = await response.json();
       setTasks(prev => [...prev, newTask]);
+    } catch {}
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await fetchWithRetry(`/api/tasks/${id}`, { method: "DELETE" });
+      setTasks(tasks.filter(t => t.id !== id));
     } catch {}
   };
 
@@ -219,18 +262,18 @@ export default function Board() {
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           {view === "board" ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-              {STATUSES.map((status, idx) => (
+              {STATUSES.map(status => (
                 <Column
                   key={status.value}
                   status={status.value}
                   label={status.label}
                   tasks={tasksByStatus[status.value]}
-                  availableTags={tags}
-                  isCreating={isCreating && idx === 0}
-                  newTaskTitle={newTaskTitle}
-                  setNewTaskTitle={setNewTaskTitle}
-                  onCreate={() => setIsCreating(true)}
-                  createRef={idx === 0 ? createRef : undefined}
+                  onEditStart={(task) => { setEditingTask(task); setEditTitle(task.title); }}
+                  onDelete={handleDelete}
+                  editingTask={editingTask}
+                  editTitle={editTitle}
+                  setEditTitle={setEditTitle}
+                  editInputRef={editInputRef}
                 />
               ))}
             </div>
@@ -238,17 +281,66 @@ export default function Board() {
             <ListView tasks={filteredTasks} tags={tags} />
           )}
         </DndContext>
+
+        {/* Single create input at bottom */}
+        <div
+          ref={inputRef}
+          contentEditable
+          suppressContentEditableWarning
+          style={{
+            fontSize: '15px',
+            fontWeight: 400,
+            color: newTaskTitle ? BLACK : GRAY_400,
+            outline: 'none',
+            marginTop: '32px',
+            padding: '12px 16px',
+            cursor: 'text',
+            minHeight: '20px',
+            opacity: newTaskTitle ? 1 : 0.6,
+            transition: 'all 0.2s',
+            borderBottom: '2px solid transparent',
+          }}
+          onFocus={e => Object.assign(e.currentTarget.style, { borderBottomColor: BLACK, opacity: 1 })}
+          onBlur={e => Object.assign(e.currentTarget.style, { borderBottomColor: 'transparent', opacity: newTaskTitle ? 1 : 0.6 })}
+          onInput={e => setNewTaskTitle(e.currentTarget.textContent || "")}
+        >{newTaskTitle || "+ Add a task..."}</div>
       </main>
+
+      {/* Edit modal */}
+      {editingTask && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={(e) => { if (e.target === e.currentTarget) { setEditingTask(null); setEditTitle(""); } }}>
+          <div style={{ backgroundColor: WHITE, borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+            <div
+              ref={editInputRef}
+              contentEditable
+              suppressContentEditableWarning
+              style={{
+                fontSize: '18px',
+                fontWeight: 500,
+                color: BLACK,
+                outline: 'none',
+                minHeight: '28px',
+                padding: '8px 12px',
+                border: '2px solid BLACK',
+                borderRadius: '10px',
+              }}
+              onInput={e => setEditTitle(e.currentTarget.textContent || "")}
+            >{editTitle}</div>
+            <div style={{ marginTop: '16px', fontSize: '13px', color: GRAY_500 }}>Press Enter to save, Esc to cancel</div>
+          </div>
+        </div>
+      )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
-function Column({ status, label, tasks, availableTags, isCreating, newTaskTitle, setNewTaskTitle, onCreate, createRef }: {
-  status: TaskStatus; label: string; tasks: Task[]; availableTags: any[];
-  isCreating?: boolean; newTaskTitle?: string; setNewTaskTitle?: (title: string) => void;
-  onCreate?: () => void; createRef?: React.RefObject<HTMLDivElement | null>;
+function Column({ status, label, tasks, onEditStart, onDelete, editingTask, editTitle, setEditTitle, editInputRef }: {
+  status: TaskStatus; label: string; tasks: Task[]; availableTags?: any[];
+  onEditStart: (task: Task) => void; onDelete: (id: number) => void;
+  editingTask: Task | null; editTitle: string; setEditTitle: (title: string) => void;
+  editInputRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const { setNodeRef } = useDroppable({ id: status, data: { status } });
   const taskIds = tasks.map(t => t.id.toString());
@@ -265,56 +357,48 @@ function Column({ status, label, tasks, availableTags, isCreating, newTaskTitle,
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '60px' }}>
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {tasks.map(task => (
-            <SortableTaskCard key={task.id} task={task} availableTags={availableTags} onUpdate={async (id: number, data: any) => { await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); }} onDelete={async (id: number) => { await fetch(`/api/tasks/${id}`, { method: "DELETE" }); window.location.reload(); }} />
+            <SortableTaskCard key={task.id} task={task} onEditStart={onEditStart} onDelete={onDelete} />
           ))}
         </SortableContext>
-
-        {/* Inline create - looks like a ghost card */}
-        {isCreating ? (
-          <div
-            ref={createRef}
-            contentEditable
-            suppressContentEditableWarning
-            style={{
-              padding: '16px 18px',
-              backgroundColor: WHITE,
-              border: '1px dashed #e5e5e5',
-              borderRadius: '12px',
-              fontSize: '15px',
-              fontWeight: 500,
-              color: BLACK,
-              outline: 'none',
-              minHeight: '52px',
-              cursor: 'text',
-            }}
-            onInput={e => setNewTaskTitle?.(e.currentTarget.textContent || "")}
-          >{newTaskTitle || ""}</div>
-        ) : (
-          <div
-            onClick={onCreate}
-            style={{
-              padding: '16px 18px',
-              color: GRAY_400,
-              fontSize: '15px',
-              cursor: 'text',
-              border: '1px dashed transparent',
-              borderRadius: '12px',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => Object.assign(e.currentTarget.style, { borderColor: '#e5e5e5', color: GRAY_500 })}
-            onMouseLeave={e => Object.assign(e.currentTarget.style, { borderColor: 'transparent', color: GRAY_400 })}
-          >+ Add a task...</div>
-        )}
       </div>
     </div>
   );
 }
 
-function SortableTaskCard({ task, availableTags, onUpdate, onDelete }: { task: Task; availableTags: any[]; onUpdate: any; onDelete: any }) {
+function SortableTaskCard({ task, onEditStart, onDelete }: { task: Task; onEditStart: (task: Task) => void; onDelete: (id: number) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id.toString(), data: { status: task.status } });
-  return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}>
-    <TaskCard task={task} availableTags={availableTags} onUpdate={onUpdate} onDelete={onDelete} dragAttributes={attributes} dragListeners={listeners} />
-  </div>;
+
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}>
+      <div
+        style={{
+          padding: '16px 18px',
+          backgroundColor: WHITE,
+          border: '1px solid #e5e5e5',
+          borderRadius: '12px',
+          cursor: 'grab',
+          transition: 'all 0.2s ease',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+        {...attributes}
+        {...listeners}
+        onMouseEnter={e => Object.assign(e.currentTarget.style, { borderColor: GRAY_300, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' })}
+        onMouseLeave={e => Object.assign(e.currentTarget.style, { borderColor: '#e5e5e5', boxShadow: 'none' })}
+      >
+        <span style={{ fontSize: '15px', fontWeight: 500, color: BLACK, flex: 1 }}>{task.title}</span>
+        <div style={{ display: 'flex', gap: '4px', marginLeft: '12px' }}>
+          <button onClick={(e) => { e.stopPropagation(); onEditStart(task); }} style={{ padding: '6px', color: GRAY_400, borderRadius: '6px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { color: BLACK, backgroundColor: GRAY_100 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { color: GRAY_400, backgroundColor: 'transparent' })}>
+            <PencilIcon style={{ width: '14px', height: '14px' }} />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} style={{ padding: '6px', color: GRAY_400, borderRadius: '6px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { color: '#dc2626', backgroundColor: '#fef2f2' })} onMouseLeave={e => Object.assign(e.currentTarget.style, { color: GRAY_400, backgroundColor: 'transparent' })}>
+            <TrashIcon style={{ width: '14px', height: '14px' }} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ListView({ tasks, tags }: { tasks: Task[]; tags: any[] }) {
