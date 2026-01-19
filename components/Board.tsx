@@ -51,10 +51,12 @@ export default function Board() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTag, setFilterTag] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -77,10 +79,36 @@ export default function Board() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) setShowFilterDropdown(false);
+      if (inputRef.current && !inputRef.current.contains(e.target as Node) && isFocused) {
+        saveNewTask();
+      }
     };
     document.addEventListener('mousedown', handleClickOutside as any);
     return () => document.removeEventListener('mousedown', handleClickOutside as any);
-  }, []);
+  }, [isFocused, newTaskTitle]);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFocused) {
+        setNewTaskTitle("");
+        setIsFocused(false);
+      }
+      if (e.key === 'Enter' && isFocused && !e.shiftKey) {
+        e.preventDefault();
+        saveNewTask();
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isFocused, newTaskTitle]);
+
+  const saveNewTask = useCallback(() => {
+    if (newTaskTitle.trim()) {
+      handleCreateTask(newTaskTitle.trim());
+    }
+    setNewTaskTitle("");
+    setIsFocused(false);
+  }, [newTaskTitle]);
 
   const filteredTasks = tasks.filter(t =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -113,11 +141,10 @@ export default function Board() {
   };
 
   const handleCreateTask = async (title: string) => {
-    if (!title.trim()) return;
     try {
       const response = await fetchWithRetry("/api/tasks", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), description: "", tags: [], status: "not_started" }),
+        body: JSON.stringify({ title, description: "", tags: [], status: "not_started" }),
       });
       if (!response.ok) throw new Error("Failed");
       const newTask = await response.json();
@@ -131,18 +158,14 @@ export default function Board() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: BLACK }}>
-      {/* Header */}
       <header style={{ position: 'sticky', top: 0, zIndex: 40, backgroundColor: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', padding: '14px 20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 style={{ fontSize: '18px', fontWeight: 700, color: WHITE, letterSpacing: '-0.02em' }}>TicTac</h1>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {/* Search */}
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <MagnifyingGlassIcon style={{ position: 'absolute', left: '10px', color: GRAY_500, width: '14px', height: '14px', pointerEvents: 'none' }} />
               <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '160px', padding: '7px 10px 7px 32px', backgroundColor: GRAY_900, border: '1px solid transparent', borderRadius: '8px', fontSize: '13px', color: WHITE, outline: 'none', transition: 'all 0.15s' }} onFocus={e => Object.assign(e.currentTarget.style, { borderColor: 'rgba(255,255,255,0.15)', backgroundColor: GRAY_800 })} onBlur={e => Object.assign(e.currentTarget.style, { borderColor: 'transparent', backgroundColor: GRAY_900 })} />
             </div>
-
-            {/* Active filter pill */}
             {filterTag && (
               <div onClick={() => setFilterTag(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 10px', backgroundColor: GRAY_800, borderRadius: '6px', fontSize: '12px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: tags.find(t => t.id === filterTag)?.color || GRAY_700 }}></span>
@@ -150,13 +173,9 @@ export default function Board() {
                 <XMarkIcon style={{ width: '12px', height: '12px', color: GRAY_500 }} />
               </div>
             )}
-
-            {/* View toggle */}
             <button onClick={() => setView(view === "board" ? "list" : "board")} style={{ padding: '7px', backgroundColor: view === "board" ? GRAY_800 : 'transparent', color: view === "board" ? WHITE : GRAY_500, borderRadius: '8px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }} title="Toggle view">
               {view === "board" ? <Squares2X2Icon style={{ width: '16px', height: '16px' }} /> : <ListBulletIcon style={{ width: '16px', height: '16px' }} />}
             </button>
-
-            {/* Filter dropdown */}
             <div ref={filterRef} style={{ position: 'relative' }}>
               <button onClick={() => setShowFilterDropdown(!showFilterDropdown)} style={{ padding: '7px', backgroundColor: showFilterDropdown ? GRAY_800 : 'transparent', color: showFilterDropdown ? WHITE : GRAY_500, borderRadius: '8px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }} title="Filter by tag">
                 <TagIcon style={{ width: '16px', height: '16px' }} />
@@ -173,8 +192,6 @@ export default function Board() {
                 </div>
               )}
             </div>
-
-            {/* Sign out */}
             <button onClick={() => signOut({ callbackUrl: "/auth/signin" })} style={{ padding: '7px', backgroundColor: 'transparent', color: GRAY_500, borderRadius: '8px', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }} title="Sign out">
               <ArrowRightOnRectangleIcon style={{ width: '16px', height: '16px' }} />
             </button>
@@ -182,7 +199,6 @@ export default function Board() {
         </div>
       </header>
 
-      {/* Main content */}
       <main style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           {view === "board" ? (
@@ -196,14 +212,25 @@ export default function Board() {
           )}
         </DndContext>
 
-        {/* Single global create button at bottom */}
-        {isCreating ? (
-          <InlineCreate onSave={handleCreateTask} onCancel={() => setIsCreating(false)} />
-        ) : (
-          <div onClick={() => setIsCreating(true)} style={{ marginTop: '20px', padding: '14px 20px', color: GRAY_600, fontSize: '15px', cursor: 'text', textAlign: 'center', transition: 'color 0.2s' }} onMouseEnter={e => Object.assign(e.currentTarget.style, { color: GRAY_500 })} onMouseLeave={e => Object.assign(e.currentTarget.style, { color: GRAY_600 })}>
-            + Add a task...
-          </div>
-        )}
+        {/* Single input at bottom - no border, just text */}
+        <div
+          ref={inputRef}
+          contentEditable
+          suppressContentEditableWarning
+          onFocus={() => setIsFocused(true)}
+          style={{
+            fontSize: '15px',
+            fontWeight: 400,
+            color: WHITE,
+            outline: 'none',
+            marginTop: '20px',
+            padding: '12px 16px',
+            cursor: 'text',
+            opacity: newTaskTitle || isFocused ? 1 : 0.4,
+            transition: 'opacity 0.15s',
+          }}
+          onInput={e => setNewTaskTitle(e.currentTarget.textContent || "")}
+        >{newTaskTitle || "+ Add a task..."}</div>
       </main>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -219,13 +246,10 @@ function Column({ status, label, tasks, availableTags }: {
 
   return (
     <div ref={setNodeRef} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {/* Column header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
         <span style={{ fontSize: '12px', fontWeight: 600, color: GRAY_500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</span>
         <span style={{ fontSize: '12px', color: GRAY_600 }}>{tasks.length}</span>
       </div>
-
-      {/* Tasks */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minHeight: '60px' }}>
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {tasks.map(task => (
@@ -234,64 +258,6 @@ function Column({ status, label, tasks, availableTags }: {
         </SortableContext>
       </div>
     </div>
-  );
-}
-
-// Single inline create - appears at bottom of page
-function InlineCreate({ onSave, onCancel }: { onSave: (title: string) => void; onCancel: () => void }) {
-  const [title, setTitle] = useState("");
-  const inputRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { inputRef.current?.focus(); }, []);
-
-  const submit = useCallback(() => {
-    if (title.trim()) { onSave(title.trim()); }
-    onCancel();
-  }, [title, onSave, onCancel]);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        submit();
-      }
-    };
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
-    };
-    const handleEnter = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        submit();
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside as any);
-    document.addEventListener('keydown', handleEsc);
-    document.addEventListener('keydown', handleEnter);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside as any);
-      document.removeEventListener('keydown', handleEsc);
-      document.removeEventListener('keydown', handleEnter);
-    };
-  }, [title, submit, onCancel]);
-
-  return (
-    <div
-      ref={inputRef}
-      contentEditable
-      suppressContentEditableWarning
-      style={{
-        fontSize: '15px',
-        fontWeight: 400,
-        color: WHITE,
-        outline: 'none',
-        minHeight: '22px',
-        padding: '14px 20px',
-        marginTop: '20px',
-        cursor: 'text',
-        textAlign: 'center',
-      }}
-      onInput={e => setTitle(e.currentTarget.textContent || "")}
-    >{title || "Type a task name..."}</div>
   );
 }
 
