@@ -53,12 +53,12 @@ export default function Board() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTag, setFilterTag] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLDivElement>(null);
+  const createRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -81,36 +81,39 @@ export default function Board() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) setShowFilterDropdown(false);
-      if (inputRef.current && !inputRef.current.contains(e.target as Node) && isFocused) {
-        saveNewTask();
+      if (isCreating && createRef.current && !createRef.current.contains(e.target as Node)) {
+        if (newTaskTitle.trim()) {
+          handleCreateTask(newTaskTitle.trim());
+        }
+        setNewTaskTitle("");
+        setIsCreating(false);
+      }
+    };
+    const handleKeys = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isCreating) {
+        setNewTaskTitle("");
+        setIsCreating(false);
+      }
+      if (e.key === 'Enter' && isCreating && !e.shiftKey && newTaskTitle.trim()) {
+        e.preventDefault();
+        handleCreateTask(newTaskTitle.trim());
+        setNewTaskTitle("");
+        setIsCreating(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside as any);
-    return () => document.removeEventListener('mousedown', handleClickOutside as any);
-  }, [isFocused, newTaskTitle]);
+    document.addEventListener('keydown', handleKeys);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside as any);
+      document.removeEventListener('keydown', handleKeys);
+    };
+  }, [isCreating, newTaskTitle]);
 
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isFocused) {
-        setNewTaskTitle("");
-        setIsFocused(false);
-      }
-      if (e.key === 'Enter' && isFocused && !e.shiftKey) {
-        e.preventDefault();
-        saveNewTask();
-      }
-    };
-    document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
-  }, [isFocused, newTaskTitle]);
-
-  const saveNewTask = useCallback(() => {
-    if (newTaskTitle.trim()) {
-      handleCreateTask(newTaskTitle.trim());
+    if (isCreating && createRef.current) {
+      createRef.current.focus();
     }
-    setNewTaskTitle("");
-    setIsFocused(false);
-  }, [newTaskTitle]);
+  }, [isCreating]);
 
   const filteredTasks = tasks.filter(t =>
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -156,7 +159,7 @@ export default function Board() {
 
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
 
-  if (isLoading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: WHITE }}><div style={{ width: '20px', height: '20px', border: '3px solid GRAY_200', borderTopColor: BLACK, borderRadius: '50%', animation: 'spin 0.6s linear infinite' }}></div></div>;
+  if (isLoading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: WHITE }}><div style={{ width: '20px', height: '20px', border: '3px solid #e5e5e5', borderTopColor: BLACK, borderRadius: '50%', animation: 'spin 0.6s linear infinite' }}></div></div>;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: WHITE, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
@@ -216,35 +219,25 @@ export default function Board() {
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           {view === "board" ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-              {STATUSES.map(status => (
-                <Column key={status.value} status={status.value} label={status.label} tasks={tasksByStatus[status.value]} availableTags={tags} />
+              {STATUSES.map((status, idx) => (
+                <Column
+                  key={status.value}
+                  status={status.value}
+                  label={status.label}
+                  tasks={tasksByStatus[status.value]}
+                  availableTags={tags}
+                  isCreating={isCreating && idx === 0}
+                  newTaskTitle={newTaskTitle}
+                  setNewTaskTitle={setNewTaskTitle}
+                  onCreate={() => setIsCreating(true)}
+                  createRef={idx === 0 ? createRef : undefined}
+                />
               ))}
             </div>
           ) : (
             <ListView tasks={filteredTasks} tags={tags} />
           )}
         </DndContext>
-
-        {/* Minimal create - nothing visible until focused */}
-        <div
-          ref={inputRef}
-          contentEditable
-          suppressContentEditableWarning
-          onFocus={() => setIsFocused(true)}
-          style={{
-            fontSize: '15px',
-            fontWeight: 400,
-            color: newTaskTitle ? BLACK : GRAY_400,
-            outline: 'none',
-            marginTop: '32px',
-            padding: '8px 4px',
-            cursor: 'text',
-            minHeight: '20px',
-            opacity: newTaskTitle || isFocused ? 1 : 0,
-            transition: 'opacity 0.2s',
-          }}
-          onInput={e => setNewTaskTitle(e.currentTarget.textContent || "")}
-        >{newTaskTitle || (isFocused ? "" : "Type to add a task...")}</div>
       </main>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -252,8 +245,10 @@ export default function Board() {
   );
 }
 
-function Column({ status, label, tasks, availableTags }: {
+function Column({ status, label, tasks, availableTags, isCreating, newTaskTitle, setNewTaskTitle, onCreate, createRef }: {
   status: TaskStatus; label: string; tasks: Task[]; availableTags: any[];
+  isCreating?: boolean; newTaskTitle?: string; setNewTaskTitle?: (title: string) => void;
+  onCreate?: () => void; createRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   const { setNodeRef } = useDroppable({ id: status, data: { status } });
   const taskIds = tasks.map(t => t.id.toString());
@@ -273,6 +268,43 @@ function Column({ status, label, tasks, availableTags }: {
             <SortableTaskCard key={task.id} task={task} availableTags={availableTags} onUpdate={async (id: number, data: any) => { await fetch(`/api/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); }} onDelete={async (id: number) => { await fetch(`/api/tasks/${id}`, { method: "DELETE" }); window.location.reload(); }} />
           ))}
         </SortableContext>
+
+        {/* Inline create - looks like a ghost card */}
+        {isCreating ? (
+          <div
+            ref={createRef}
+            contentEditable
+            suppressContentEditableWarning
+            style={{
+              padding: '16px 18px',
+              backgroundColor: WHITE,
+              border: '1px dashed #e5e5e5',
+              borderRadius: '12px',
+              fontSize: '15px',
+              fontWeight: 500,
+              color: BLACK,
+              outline: 'none',
+              minHeight: '52px',
+              cursor: 'text',
+            }}
+            onInput={e => setNewTaskTitle?.(e.currentTarget.textContent || "")}
+          >{newTaskTitle || ""}</div>
+        ) : (
+          <div
+            onClick={onCreate}
+            style={{
+              padding: '16px 18px',
+              color: GRAY_400,
+              fontSize: '15px',
+              cursor: 'text',
+              border: '1px dashed transparent',
+              borderRadius: '12px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => Object.assign(e.currentTarget.style, { borderColor: '#e5e5e5', color: GRAY_500 })}
+            onMouseLeave={e => Object.assign(e.currentTarget.style, { borderColor: 'transparent', color: GRAY_400 })}
+          >+ Add a task...</div>
+        )}
       </div>
     </div>
   );
