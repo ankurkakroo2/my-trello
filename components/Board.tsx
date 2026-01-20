@@ -29,12 +29,6 @@ import {
   SparklesIcon,
 } from "@heroicons/react/24/solid";
 
-const STATUSES: { value: TaskStatus; label: string; gradient: string; accent: string }[] = [
-  { value: "not_started", label: "BACKLOG", gradient: "linear-gradient(135deg, #374151 0%, #1f2937 100%)", accent: C.indigo },
-  { value: "in_progress", label: "IN PROGRESS", gradient: "linear-gradient(135deg, #4b5563 0%, #374151 100%)", accent: C.orange },
-  { value: "complete", label: "DONE", gradient: "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)", accent: C.green },
-];
-
 // BOLD DRAMATIC PALETTE
 const C = {
   // Neutrals
@@ -74,6 +68,12 @@ const C = {
   fuchsia: "#d946ef",
   rose: "#f43f5e",
 };
+
+const STATUSES: { value: TaskStatus; label: string; gradient: string; accent: string }[] = [
+  { value: "not_started", label: "BACKLOG", gradient: "linear-gradient(135deg, #374151 0%, #1f2937 100%)", accent: C.indigo },
+  { value: "in_progress", label: "IN PROGRESS", gradient: "linear-gradient(135deg, #4b5563 0%, #374151 100%)", accent: C.orange },
+  { value: "complete", label: "DONE", gradient: "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)", accent: C.green },
+];
 
 export default function Board() {
   const [tasks, setTasks] = useState<Task[]>([]);
