@@ -2,26 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Clean white theme */
-* {
+/* Swiss/Brutalist-inspired refined aesthetic */
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
+html {
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-  background-color: #ffffff;
-  color: #000000;
+  margin: 0;
+  padding: 0;
+  background-color: #fafafa;
+  color: #0a0a0a;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* Force LTR for all editable content */
+[contenteditable] {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed !important;
+}
+
+input, textarea {
+  direction: ltr !important;
+  text-align: left !important;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  color: #000000;
   font-weight: 600;
+  color: #0a0a0a;
+  margin: 0;
 }
 
 button {
   cursor: pointer;
+  font-family: inherit;
 }
 
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+a {
+  color: #0a0a0a;
+  text-decoration: none;
+}
+
+/* Selection styling */
+::selection {
+  background-color: #0a0a0a;
+  color: #ffffff;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid #0a0a0a;
+  outline-offset: 2px;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color, transform, box-shadow, opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }

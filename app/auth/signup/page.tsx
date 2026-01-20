@@ -4,27 +4,19 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-// REFINED PALETTE
 const C = {
   white: "#FFFFFF",
-  offwhite: "#FAFAF9",
-  cream: "#FFFBF7",
-
-  gray50: "#FAFAF9",
-  gray100: "#F5F5F4",
-  gray200: "#E7E5E4",
-  gray300: "#D6D3D1",
-  gray400: "#A8A29E",
-  gray500: "#78716C",
-  gray600: "#57534E",
-  gray700: "#44403C",
-  gray800: "#292524",
-  gray900: "#1C1917",
-  black: "#0C0A09",
-
-  indigo: "#6366F1",
-  violet: "#8B5CF6",
-  rose: "#E11D48",
+  offwhite: "#FAFAFA",
+  gray50: "#F7F7F7",
+  gray100: "#E8E8E8",
+  gray200: "#D4D4D4",
+  gray300: "#A3A3A3",
+  gray400: "#737373",
+  gray500: "#525252",
+  gray600: "#404040",
+  gray700: "#262626",
+  gray800: "#171717",
+  black: "#0A0A0A",
 };
 
 export default function SignUpPage() {
@@ -43,12 +35,12 @@ export default function SignUpPage() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("PASSWORDS DO NOT MATCH");
+      setError("Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      setError("PASSWORD MUST BE AT LEAST 6 CHARACTERS");
+      setError("Password must be at least 6 characters");
       return;
     }
 
@@ -64,13 +56,13 @@ export default function SignUpPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "FAILED TO CREATE ACCOUNT");
+        setError(data.error || "Failed to create account");
         return;
       }
 
       router.push("/auth/signin");
     } catch {
-      setError("SOMETHING WENT WRONG");
+      setError("Something went wrong");
     } finally {
       setIsLoading(false);
     }
@@ -84,101 +76,55 @@ export default function SignUpPage() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '24px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+      fontFamily: "'SF Pro Display', -apple-system, sans-serif",
     }}>
-
       <div style={{
         width: '100%',
-        maxWidth: '520px',
-        position: 'relative',
-        zIndex: 1,
+        maxWidth: '400px',
         opacity: mounted ? 1 : 0,
-        transform: mounted ? 'translateY(0)' : 'translateY(30px)',
-        transition: 'all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        transform: mounted ? 'translateY(0)' : 'translateY(10px)',
+        transition: 'all 0.3s ease',
       }}>
+        {/* Logo/Brand */}
         <div style={{
-          padding: '64px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: '40px',
-          boxShadow: '0 40px 100px rgba(0,0,0,0.15)',
-          border: `4px solid ${C.black}`,
-          position: 'relative',
-          overflow: 'hidden',
+          textAlign: 'center',
+          marginBottom: '40px',
         }}>
-          {/* Gradient accent line */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '6px',
-            background: `linear-gradient(90deg, ${C.black}, ${C.gray800}, ${C.gray700}, ${C.gray600}, ${C.black})`,
-          }} />
-
-          {/* MASSIVE Logo */}
-          <div style={{
-            textAlign: 'center',
-            marginBottom: '48px',
+          <h1 style={{
+            fontSize: '28px',
+            fontWeight: 700,
+            color: C.black,
+            letterSpacing: '-0.03em',
+            marginBottom: '8px',
           }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '100px',
-              height: '100px',
-              background: `linear-gradient(135deg, ${C.gray800}, ${C.black})`,
-              borderRadius: '30px',
-              marginBottom: '24px',
-              boxShadow: '0 15px 50px rgba(0,0,0,0.3)',
-              animation: 'logoFloat 4s ease-in-out infinite',
-              position: 'relative',
-            }}>
-              <div style={{
-                position: 'absolute',
-                inset: -6,
-                borderRadius: '36px',
-                background: `linear-gradient(135deg, ${C.gray700}, ${C.black})`,
-                opacity: 0.3,
-                animation: 'pulseRing 2.5s ease-out infinite',
-              }} />
-              <span style={{
-                fontSize: '48px',
-                fontWeight: 900,
-                color: C.white,
-                textShadow: '0 2px 8px rgba(0,0,0,0.3)',
-              }}>✨</span>
-            </div>
+            TicTac
+          </h1>
+          <p style={{
+            fontSize: '14px',
+            color: C.gray500,
+            fontWeight: 500,
+          }}>
+            Create your account
+          </p>
+        </div>
 
-            <h1 style={{
-              fontSize: '36px',
-              fontWeight: 600,
-              color: C.gray900,
-              letterSpacing: '-0.04em',
-              lineHeight: 1.1,
-              marginBottom: '8px',
-            }}>
-              TicTac
-            </h1>
-            <p style={{
-              fontSize: '15px',
-              color: C.gray500,
-              fontWeight: 500,
-              letterSpacing: '0.02em',
-            }}>
-              Create your account
-            </p>
-          </div>
-
-          {/* Error message - Refined */}
+        {/* Form Card */}
+        <div style={{
+          padding: '32px',
+          background: C.white,
+          borderRadius: '16px',
+          border: `1px solid ${C.gray100}`,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+        }}>
+          {/* Error message */}
           {error && (
             <div style={{
-              padding: '12px 16px',
-              background: `${C.rose}10`,
-              border: `1px solid ${C.rose}30`,
+              padding: '10px 12px',
+              background: `${C.black}05`,
+              border: `1px solid ${C.black}15`,
               borderRadius: '8px',
-              color: C.rose,
-              fontSize: '14px',
+              color: C.gray800,
+              fontSize: '13px',
               fontWeight: 500,
               marginBottom: '16px',
               textAlign: 'center',
@@ -187,21 +133,16 @@ export default function SignUpPage() {
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Email - DRAMATIC */}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label htmlFor="email" style={{
                 display: 'block',
                 fontSize: '13px',
-                fontWeight: 900,
-                marginBottom: '12px',
+                fontWeight: 600,
+                marginBottom: '6px',
                 color: C.gray700,
-                textAlign: 'left',
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
               }}>
-                Email Address
+                Email
               </label>
               <input
                 id="email"
@@ -210,46 +151,36 @@ export default function SignUpPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '22px 28px',
+                  padding: '10px 12px',
                   backgroundColor: C.gray50,
-                  border: `3px solid ${C.gray300}`,
-                  borderRadius: '20px',
-                  fontSize: '18px',
-                  fontWeight: 700,
+                  border: `1px solid ${C.gray200}`,
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 500,
                   color: C.black,
                   outline: 'none',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  letterSpacing: '0.02em',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s ease',
                 }}
                 placeholder="you@example.com"
                 required
                 onFocus={(e) => Object.assign(e.currentTarget.style, {
-                  borderColor: C.black,
+                  borderColor: C.gray400,
                   backgroundColor: C.white,
-                  boxShadow: '0 0 0 5px rgba(0,0,0,0.1), 0 10px 40px rgba(0,0,0,0.15)',
-                  transform: 'scale(1.02)',
                 })}
                 onBlur={(e) => Object.assign(e.currentTarget.style, {
-                  borderColor: C.gray300,
+                  borderColor: C.gray200,
                   backgroundColor: C.gray50,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                  transform: 'scale(1)',
                 })}
               />
             </div>
 
-            {/* Password - DRAMATIC */}
             <div>
               <label htmlFor="password" style={{
                 display: 'block',
                 fontSize: '13px',
-                fontWeight: 900,
-                marginBottom: '12px',
+                fontWeight: 600,
+                marginBottom: '6px',
                 color: C.gray700,
-                textAlign: 'left',
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
               }}>
                 Password
               </label>
@@ -260,47 +191,37 @@ export default function SignUpPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '22px 28px',
+                  padding: '10px 12px',
                   backgroundColor: C.gray50,
-                  border: `3px solid ${C.gray300}`,
-                  borderRadius: '20px',
-                  fontSize: '18px',
-                  fontWeight: 700,
+                  border: `1px solid ${C.gray200}`,
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 500,
                   color: C.black,
                   outline: 'none',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  letterSpacing: '0.02em',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s ease',
                 }}
-                placeholder="•••••••••"
+                placeholder="••••••••"
                 required
                 minLength={6}
                 onFocus={(e) => Object.assign(e.currentTarget.style, {
-                  borderColor: C.black,
+                  borderColor: C.gray400,
                   backgroundColor: C.white,
-                  boxShadow: '0 0 0 5px rgba(0,0,0,0.1), 0 10px 40px rgba(0,0,0,0.15)',
-                  transform: 'scale(1.02)',
                 })}
                 onBlur={(e) => Object.assign(e.currentTarget.style, {
-                  borderColor: C.gray300,
+                  borderColor: C.gray200,
                   backgroundColor: C.gray50,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                  transform: 'scale(1)',
                 })}
               />
             </div>
 
-            {/* Confirm Password - DRAMATIC */}
             <div>
               <label htmlFor="confirmPassword" style={{
                 display: 'block',
                 fontSize: '13px',
-                fontWeight: 900,
-                marginBottom: '12px',
+                fontWeight: 600,
+                marginBottom: '6px',
                 color: C.gray700,
-                textAlign: 'left',
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
               }}>
                 Confirm Password
               </label>
@@ -311,145 +232,88 @@ export default function SignUpPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '22px 28px',
+                  padding: '10px 12px',
                   backgroundColor: C.gray50,
-                  border: `3px solid ${C.gray300}`,
-                  borderRadius: '20px',
-                  fontSize: '18px',
-                  fontWeight: 700,
+                  border: `1px solid ${C.gray200}`,
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 500,
                   color: C.black,
                   outline: 'none',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  letterSpacing: '0.02em',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s ease',
                 }}
-                placeholder="•••••••••"
+                placeholder="••••••••"
                 required
                 minLength={6}
                 onFocus={(e) => Object.assign(e.currentTarget.style, {
-                  borderColor: C.black,
+                  borderColor: C.gray400,
                   backgroundColor: C.white,
-                  boxShadow: '0 0 0 5px rgba(0,0,0,0.1), 0 10px 40px rgba(0,0,0,0.15)',
-                  transform: 'scale(1.02)',
                 })}
                 onBlur={(e) => Object.assign(e.currentTarget.style, {
-                  borderColor: C.gray300,
+                  borderColor: C.gray200,
                   backgroundColor: C.gray50,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                  transform: 'scale(1)',
                 })}
               />
             </div>
 
-            {/* Submit - Refined button */}
             <button
               type="submit"
               disabled={isLoading}
               style={{
                 width: '100%',
-                padding: '12px 20px',
-                background: `linear-gradient(135deg, ${C.gray900}, ${C.black})`,
+                padding: '12px',
+                background: C.black,
                 color: C.white,
-                fontWeight: 500,
-                fontSize: '15px',
+                fontWeight: 600,
+                fontSize: '14px',
                 border: 'none',
                 borderRadius: '8px',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 opacity: isLoading ? 0.6 : 1,
                 transition: 'all 0.2s ease',
                 marginTop: '8px',
-                letterSpacing: '0.02em',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
               }}
               onMouseEnter={(e) => {
                 if (!isLoading) {
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.background = C.violet;
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                  Object.assign(e.currentTarget.style, {
+                    background: C.gray800,
+                    transform: 'translateY(-1px)',
+                  });
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.background = `linear-gradient(135deg, ${C.gray900}, ${C.black})`;
-                e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.08)';
+                Object.assign(e.currentTarget.style, {
+                  background: C.black,
+                  transform: 'translateY(0)',
+                });
               }}
             >
-              {isLoading ? "Creating..." : "Sign Up"}
+              {isLoading ? "Creating account..." : "Sign up"}
             </button>
           </form>
 
           {/* Sign in link */}
-          <div style={{ textAlign: 'center', marginTop: '40px', paddingTop: '40px', borderTop: `3px solid ${C.gray200}` }}>
+          <div style={{ textAlign: 'center', marginTop: '24px', paddingTop: '24px', borderTop: `1px solid ${C.gray100}` }}>
             <p style={{
-              color: C.gray700,
-              fontSize: '16px',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
+              color: C.gray600,
+              fontSize: '13px',
+              fontWeight: 500,
             }}>
               Already have an account?{" "}
               <Link
                 href="/auth/signin"
                 style={{
-                  fontWeight: 900,
+                  fontWeight: 600,
                   color: C.black,
                   textDecoration: 'none',
                 }}
               >
-                SIGN IN
+                Sign in
               </Link>
             </p>
           </div>
         </div>
-
-        {/* Footer tagline */}
-        <p style={{
-          textAlign: 'center',
-          color: C.gray600,
-          fontSize: '14px',
-          marginTop: '40px',
-          fontWeight: 700,
-          letterSpacing: '0.15em',
-          textTransform: 'uppercase',
-        }}>
-          ✨ Bold Task Management ✨
-        </p>
       </div>
-
-      <style>{`
-        @keyframes float1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(50px, -50px) scale(1.2); }
-          66% { transform: translate(-30px, 30px) scale(0.9); }
-        }
-        @keyframes float2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(-40px, 40px) scale(1.15); }
-          66% { transform: translate(30px, -20px) scale(0.95); }
-        }
-        @keyframes float3 {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          50% { transform: translate(20px, -20px) rotate(180deg); }
-        }
-        @keyframes logoFloat {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-8px) rotate(5deg); }
-        }
-        @keyframes pulseRing {
-          0% { transform: scale(1); opacity: 0.5; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
-        @keyframes gradientShift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-10px); }
-          40% { transform: translateX(10px); }
-          60% { transform: translateX(-5px); }
-          80% { transform: translateX(5px); }
-        }
-      `}</style>
     </div>
   );
 }

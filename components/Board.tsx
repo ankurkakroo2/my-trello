@@ -25,47 +25,28 @@ import {
   XMarkIcon,
   ArrowRightOnRectangleIcon,
   PlusIcon,
-  FireIcon,
-  SparklesIcon,
 } from "@heroicons/react/24/solid";
 
-// REFINED PALETTE - Premium sophisticated aesthetic
+// Refined monochromatic palette with architectural precision
 const C = {
-  // Neutrals - Warm, sophisticated grays
   white: "#FFFFFF",
-  offwhite: "#FAFAF9",
-  cream: "#FFFBF7",
-  ivory: "#FFFFF0",
-
-  // Greys - Warm tonal spectrum
-  gray50: "#FAFAF9",
-  gray100: "#F5F5F4",
-  gray200: "#E7E5E4",
-  gray300: "#D6D3D1",
-  gray400: "#A8A29E",
-  gray500: "#78716C",
-  gray600: "#57534E",
-  gray700: "#44403C",
-  gray800: "#292524",
-  gray900: "#1C1917",
-  black: "#0C0A09",
-
-  // Premium accent palette - Sophisticated, not oversaturated
-  sage: "#84CC16",
-  teal: "#0D9488",
-  ocean: "#0EA5E9",
-  indigo: "#6366F1",
-  violet: "#8B5CF6",
-  magenta: "#D946EF",
-  rose: "#E11D48",
-  coral: "#F97316",
-  amber: "#F59E0B",
+  offwhite: "#FAFAFA",
+  gray50: "#F7F7F7",
+  gray100: "#E8E8E8",
+  gray200: "#D4D4D4",
+  gray300: "#A3A3A3",
+  gray400: "#737373",
+  gray500: "#525252",
+  gray600: "#404040",
+  gray700: "#262626",
+  gray800: "#171717",
+  black: "#0A0A0A",
 };
 
-const STATUSES: { value: TaskStatus; label: string; gradient: string; accent: string }[] = [
-  { value: "not_started", label: "BACKLOG", gradient: "linear-gradient(135deg, #E7E5E4 0%, #D6D3D1 100%)", accent: C.indigo },
-  { value: "in_progress", label: "IN PROGRESS", gradient: "linear-gradient(135deg, #78716C 0%, #57534E 100%)", accent: C.coral },
-  { value: "complete", label: "DONE", gradient: "linear-gradient(135deg, #D6D3D1 0%, #A8A29E 100%)", accent: C.ocean },
+const STATUSES: { value: TaskStatus; label: string }[] = [
+  { value: "not_started", label: "BACKLOG" },
+  { value: "in_progress", label: "IN PROGRESS" },
+  { value: "complete", label: "DONE" },
 ];
 
 export default function Board() {
@@ -81,8 +62,6 @@ export default function Board() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [hoveredTask, setHoveredTask] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [staggerIndex, setStaggerIndex] = useState(0);
-  const [colorShift, setColorShift] = useState(0);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -104,13 +83,6 @@ export default function Board() {
     fetchTasks();
     fetchTags();
     setMounted(true);
-    setTimeout(() => setStaggerIndex(1), 100);
-
-    // Color shift animation
-    const interval = setInterval(() => {
-      setColorShift(prev => (prev + 1) % 360);
-    }, 50);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -192,51 +164,39 @@ export default function Board() {
         justifyContent: 'center',
         minHeight: '100vh',
         background: C.offwhite,
-        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+        fontFamily: "'SF Pro Display', -apple-system, sans-serif",
       }}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '24px',
-        }}>
-          {/* Simple, elegant loading animation */}
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {[0, 1, 2].map((i) => {
-              return (
-                <div key={i} style={{
-                  width: '8px',
-                  background: C.indigo,
-                  borderRadius: '4px',
-                  animation: `bounce ${0.6 + i * 0.1}s ease-in-out infinite`,
-                  height: '24px',
-                }} />
-              );
-            })}
-          </div>
-
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            margin: '0 auto 24px',
+            border: `3px solid ${C.gray200}`,
+            borderTopColor: C.black,
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+          }} />
           <h1 style={{
-            fontSize: '28px',
+            fontSize: '24px',
             fontWeight: 600,
-            color: C.gray900,
-            letterSpacing: '-0.03em',
+            color: C.black,
+            letterSpacing: '-0.02em',
+            marginBottom: '8px',
           }}>
             TicTac
           </h1>
-
           <p style={{
-            fontSize: '15px',
-            fontWeight: 500,
+            fontSize: '14px',
             color: C.gray500,
+            fontWeight: 500,
           }}>
-            Loading your workspace
+            Loading workspace
           </p>
         </div>
 
         <style>{`
-          @keyframes bounce {
-            0%, 100% { transform: scaleY(1); }
-            50% { transform: scaleY(0.5); }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
           }
         `}</style>
       </div>
@@ -256,187 +216,131 @@ export default function Board() {
     <div style={{
       minHeight: '100vh',
       background: C.offwhite,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+      fontFamily: "'SF Pro Display', -apple-system, sans-serif",
       opacity: mounted ? 1 : 0,
-      transition: 'opacity 0.5s ease',
+      transition: 'opacity 0.3s ease',
       position: 'relative',
-      overflow: 'hidden',
     }}>
-      {/* Animated gradient background */}
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        background: `
-          radial-gradient(circle at 20% 30%, ${C.gray200}15 0%, transparent 50%),
-          radial-gradient(circle at 80% 70%, ${C.gray300}15 0%, transparent 50%),
-          radial-gradient(circle at 50% 50%, ${C.gray100}20 0%, transparent 50%)
-        `,
-        animation: 'gradientMove 15s ease infinite',
-        pointerEvents: 'none',
-        zIndex: 0,
-      }} />
-
-      {/* Dot pattern overlay */}
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0)',
-        backgroundSize: '30px 30px',
-        pointerEvents: 'none',
-        zIndex: 0,
-      }} />
-
-      {/* HEADER - Refined & Elegant */}
+      {/* HEADER - Clean, architectural */}
       <header style={{
-        position: 'relative',
-        zIndex: 10,
-        padding: '32px 48px',
-        background: 'rgba(255, 255, 255, 0.92)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: `1px solid ${C.gray200}`,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        padding: '20px 32px',
+        background: C.white,
+        borderBottom: `1px solid ${C.gray100}`,
       }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          maxWidth: '1600px',
+          maxWidth: '1400px',
           margin: '0 auto',
         }}>
-          {/* Logo - Elegant & Clean */}
+          {/* Logo - Minimal & Clean */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '20px',
+            gap: '24px',
           }}>
-            <div style={{
-              width: '56px',
-              height: '56px',
-              background: `linear-gradient(135deg, ${C.indigo} 0%, ${C.violet} 100%)`,
-              borderRadius: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.15)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            <h1 style={{
+              fontSize: '20px',
+              fontWeight: 700,
+              color: C.black,
+              letterSpacing: '-0.03em',
             }}>
-              <SparklesIcon style={{ width: '28px', height: '28px', color: C.white }} />
-            </div>
+              TicTac
+            </h1>
 
-            <div>
-              <h1 style={{
-                fontSize: '28px',
-                fontWeight: 700,
-                color: C.gray900,
-                letterSpacing: '-0.03em',
-                lineHeight: 1.2,
-              }}>
-                TicTac
-              </h1>
-
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap',
+            }}>
               <div style={{
-                display: 'flex',
-                gap: '8px',
-                marginTop: '8px',
-                flexWrap: 'wrap',
+                padding: '4px 10px',
+                background: C.gray50,
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: C.gray600,
+                letterSpacing: '0.02em',
               }}>
-                {/* Stats badges - Refined */}
+                {totalTasks} tasks
+              </div>
+
+              {taskCounts.in_progress > 0 && (
                 <div style={{
-                  padding: '4px 12px',
-                  background: C.gray100,
-                  borderRadius: '12px',
-                  fontSize: '13px',
+                  padding: '4px 10px',
+                  background: `${C.gray700}08`,
+                  borderRadius: '6px',
+                  fontSize: '12px',
                   fontWeight: 600,
                   color: C.gray700,
                   letterSpacing: '0.02em',
-                  border: `1px solid ${C.gray200}`,
                 }}>
-                  {totalTasks} Tasks
+                  {taskCounts.in_progress} active
                 </div>
+              )}
 
-                {taskCounts.in_progress > 0 && (
-                  <div style={{
-                    padding: '4px 12px',
-                    background: `${C.coral}10`,
-                    borderRadius: '12px',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    color: C.coral,
-                    letterSpacing: '0.02em',
-                    border: `1px solid ${C.coral}20`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}>
-                    <FireIcon style={{ width: '12px', height: '12px' }} />
-                    {taskCounts.in_progress} Active
-                  </div>
-                )}
-
-                {completionRate > 0 && (
-                  <div style={{
-                    padding: '4px 12px',
-                    background: `${C.ocean}10`,
-                    borderRadius: '12px',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    color: C.ocean,
-                    letterSpacing: '0.02em',
-                    border: `1px solid ${C.ocean}20`,
-                  }}>
-                    {completionRate}% Complete
-                  </div>
-                )}
-              </div>
+              {completionRate > 0 && (
+                <div style={{
+                  padding: '4px 10px',
+                  background: C.gray50,
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: C.gray600,
+                  letterSpacing: '0.02em',
+                }}>
+                  {completionRate}% done
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Actions - BOLD */}
+          {/* Actions */}
           <div style={{
             display: 'flex',
-            gap: '16px',
+            gap: '12px',
             alignItems: 'center',
           }}>
             {/* Search */}
             <div style={{ position: 'relative' }}>
               <MagnifyingGlassIcon style={{
                 position: 'absolute',
-                left: '20px',
+                left: '14px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: C.gray500,
-                width: '22px',
-                height: '22px',
+                color: C.gray400,
+                width: '18px',
+                height: '18px',
                 pointerEvents: 'none',
               }} />
               <input
                 type="text"
-                placeholder="Search tasks..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 style={{
-                  width: searchQuery ? '320px' : '240px',
-                  padding: '18px 20px 18px 56px',
-                  backgroundColor: C.white,
-                  border: `3px solid ${C.gray300}`,
-                  borderRadius: '20px',
-                  fontSize: '16px',
-                  fontWeight: 700,
+                  width: searchQuery ? '200px' : '160px',
+                  padding: '10px 14px 10px 40px',
+                  backgroundColor: C.gray50,
+                  border: `1px solid ${C.gray100}`,
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 500,
                   color: C.black,
                   outline: 'none',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  letterSpacing: '0.02em',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  transition: 'all 0.2s ease',
                 }}
                 onFocus={(e) => Object.assign(e.currentTarget.style, {
-                  borderColor: C.black,
-                  boxShadow: '0 0 0 4px rgba(0,0,0,0.1)',
-                  transform: 'scale(1.02)',
+                  borderColor: C.gray300,
+                  backgroundColor: C.white,
                 })}
                 onBlur={(e) => Object.assign(e.currentTarget.style, {
-                  borderColor: C.gray300,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  transform: 'scale(1)',
+                  borderColor: C.gray100,
+                  backgroundColor: C.gray50,
                 })}
               />
             </div>
@@ -448,38 +352,31 @@ export default function Board() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '10px',
-                  padding: '14px 20px',
-                  background: C.gray100,
-                  borderRadius: '50px',
+                  gap: '8px',
+                  padding: '10px 14px',
+                  background: C.gray50,
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  border: `3px solid ${C.gray300}`,
-                  fontWeight: 800,
-                  fontSize: '14px',
-                  color: C.gray800,
-                  transition: 'all 0.3s ease',
-                  animation: 'bounceIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+                  border: `1px solid ${C.gray100}`,
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  color: C.gray700,
                 }}
                 onMouseEnter={e => Object.assign(e.currentTarget.style, {
-                  background: C.gray200,
-                  transform: 'translateY(-3px) scale(1.05)',
-                  boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                  background: C.gray100,
                 })}
                 onMouseLeave={e => Object.assign(e.currentTarget.style, {
-                  background: C.gray100,
-                  transform: 'translateY(0) scale(1)',
-                  boxShadow: 'none',
+                  background: C.gray50,
                 })}
               >
                 <span style={{
-                  width: '12px',
-                  height: '12px',
+                  width: '8px',
+                  height: '8px',
                   borderRadius: '50%',
-                  background: tags.find(t => t.id === filterTag)?.color || C.gray500,
-                  boxShadow: `0 0 12px ${tags.find(t => t.id === filterTag)?.color || C.gray500}60`,
+                  background: tags.find(t => t.id === filterTag)?.color || C.gray400,
                 }} />
                 <span>{tags.find(t => t.id === filterTag)?.name}</span>
-                <XMarkIcon style={{ width: '18px', height: '18px', color: C.gray600 }} />
+                <XMarkIcon style={{ width: '16px', height: '16px', color: C.gray500 }} />
               </div>
             )}
 
@@ -487,35 +384,31 @@ export default function Board() {
             <button
               onClick={() => setView(view === "board" ? "list" : "board")}
               style={{
-                padding: '16px 24px',
+                padding: '10px 14px',
                 background: view === "board" ? C.black : C.white,
                 color: view === "board" ? C.white : C.black,
-                borderRadius: '20px',
+                borderRadius: '8px',
                 cursor: 'pointer',
-                border: view === "board" ? 'none' : `3px solid ${C.black}`,
+                border: view === "board" ? 'none' : `1px solid ${C.gray200}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '10px',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                fontWeight: 800,
-                fontSize: '15px',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
+                gap: '8px',
+                fontWeight: 600,
+                fontSize: '13px',
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
-                e.currentTarget.style.boxShadow = view === "board"
-                  ? `0 12px 35px ${C.indigo}40`
-                  : `0 12px 35px ${C.violet}40`;
+                Object.assign(e.currentTarget.style, {
+                  transform: 'translateY(-1px)',
+                });
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
+                Object.assign(e.currentTarget.style, {
+                  transform: 'translateY(0)',
+                });
               }}
             >
-              {view === "board" ? <Squares2X2Icon style={{ width: '22px', height: '22px' }} /> : <ListBulletIcon style={{ width: '22px', height: '22px' }} />}
+              {view === "board" ? <Squares2X2Icon style={{ width: '16px', height: '16px' }} /> : <ListBulletIcon style={{ width: '16px', height: '16px' }} />}
               {view === "board" ? 'Board' : 'List'}
             </button>
 
@@ -524,87 +417,76 @@ export default function Board() {
               <button
                 onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                 style={{
-                  padding: '16px',
+                  padding: '10px',
                   background: showFilterDropdown ? C.black : C.white,
                   color: showFilterDropdown ? C.white : C.black,
-                  borderRadius: '20px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  border: showFilterDropdown ? 'none' : `3px solid ${C.black}`,
+                  border: showFilterDropdown ? 'none' : `1px solid ${C.gray200}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  fontWeight: 800,
-                  fontSize: '15px',
-                  textTransform: 'uppercase',
-                  boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
-                  e.currentTarget.style.boxShadow = '0 12px 35px rgba(0,0,0,0.2)';
+                  Object.assign(e.currentTarget.style, {
+                    transform: 'translateY(-1px)',
+                  });
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
+                  Object.assign(e.currentTarget.style, {
+                    transform: 'translateY(0)',
+                  });
                 }}
               >
-                <TagIcon style={{ width: '24px', height: '24px' }} />
+                <TagIcon style={{ width: '18px', height: '18px' }} />
               </button>
               {showFilterDropdown && (
                 <div style={{
                   position: 'absolute',
                   top: '100%',
                   right: 0,
-                  marginTop: '16px',
+                  marginTop: '8px',
                   background: C.white,
-                  border: `3px solid ${C.black}`,
-                  borderRadius: '20px',
-                  padding: '12px',
+                  border: `1px solid ${C.gray200}`,
+                  borderRadius: '8px',
+                  padding: '8px',
                   zIndex: 50,
-                  minWidth: '240px',
-                  boxShadow: '0 15px 50px rgba(0,0,0,0.2)',
-                  animation: 'dropdownIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  minWidth: '180px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
                 }}>
                   {tags.map(tag => (
                     <div
                       key={tag.id}
                       onClick={() => { setFilterTag(tag.id); setShowFilterDropdown(false); }}
                       style={{
-                        padding: '14px 18px',
-                        fontSize: '15px',
-                        fontWeight: 800,
-                        color: C.gray800,
+                        padding: '10px 12px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: C.gray700,
                         cursor: 'pointer',
-                        borderRadius: '14px',
+                        borderRadius: '6px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '12px',
-                        transition: 'all 0.2s ease',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
+                        gap: '8px',
                       }}
                       onMouseEnter={e => Object.assign(e.currentTarget.style, {
-                        backgroundColor: C.gray100,
-                        transform: 'translateX(6px) scale(1.02)',
+                        backgroundColor: C.gray50,
                       })}
                       onMouseLeave={e => Object.assign(e.currentTarget.style, {
                         backgroundColor: 'transparent',
-                        transform: 'translateX(0) scale(1)',
                       })}
                     >
                       <span style={{
-                        width: '14px',
-                        height: '14px',
+                        width: '8px',
+                        height: '8px',
                         borderRadius: '50%',
                         background: tag.color,
-                        boxShadow: `0 0 12px ${tag.color}60`,
                       }} />
-                      <span>{tag.name}</span>
+                      <span style={{ flex: 1 }}>{tag.name}</span>
                       <span style={{
-                        marginLeft: 'auto',
-                        fontSize: '13px',
-                        color: C.gray500,
-                        fontWeight: 900,
+                        fontSize: '12px',
+                        color: C.gray400,
+                        fontWeight: 700,
                       }}>{tag.taskCount}</span>
                     </div>
                   ))}
@@ -616,38 +498,32 @@ export default function Board() {
             <button
               onClick={() => signOut({ callbackUrl: "/auth/signin" })}
               style={{
-                padding: '16px 24px',
-                background: `linear-gradient(135deg, ${C.gray800}, ${C.black})`,
+                padding: '10px 16px',
+                background: C.black,
                 color: C.white,
-                borderRadius: '20px',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 border: 'none',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                fontWeight: 800,
-                fontSize: '14px',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+                gap: '8px',
+                fontWeight: 600,
+                fontSize: '13px',
               }}
               onMouseEnter={e => {
                 Object.assign(e.currentTarget.style, {
-                  background: `linear-gradient(135deg, ${C.black}, ${C.gray900})`,
-                  transform: 'translateY(-3px) scale(1.05)',
-                  boxShadow: '0 12px 35px rgba(0,0,0,0.3)',
+                  background: C.gray800,
+                  transform: 'translateY(-1px)',
                 });
               }}
               onMouseLeave={e => {
                 Object.assign(e.currentTarget.style, {
-                  background: `linear-gradient(135deg, ${C.gray800}, ${C.black})`,
-                  transform: 'translateY(0) scale(1)',
-                  boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+                  background: C.black,
+                  transform: 'translateY(0)',
                 });
               }}
             >
-              <ArrowRightOnRectangleIcon style={{ width: '20px', height: '20px' }} />
+              <ArrowRightOnRectangleIcon style={{ width: '16px', height: '16px' }} />
             </button>
           </div>
         </div>
@@ -655,26 +531,22 @@ export default function Board() {
 
       {/* Main content */}
       <main style={{
-        padding: '40px 56px 80px',
-        maxWidth: '1800px',
+        padding: '32px 48px 64px',
+        maxWidth: '1400px',
         margin: '0 auto',
-        position: 'relative',
-        zIndex: 1,
       }}>
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           {view === "board" ? (
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '32px',
+              gap: '24px',
             }}>
               {STATUSES.map((status, index) => (
                 <Column
                   key={status.value}
                   status={status.value}
                   label={status.label}
-                  gradient={status.gradient}
-                  accent={status.accent}
                   tasks={tasksByStatus[status.value]}
                   onDelete={handleDeleteTask}
                   onUpdate={handleUpdateTask}
@@ -683,7 +555,6 @@ export default function Board() {
                   setEditingId={setEditingId}
                   hoveredTask={hoveredTask}
                   setHoveredTask={setHoveredTask}
-                  animIndex={index}
                 />
               ))}
             </div>
@@ -707,68 +578,28 @@ export default function Board() {
       <DragOverlay>
         {activeTask ? (
           <div style={{
-            padding: '20px 28px',
-            background: `linear-gradient(135deg, ${C.gray800}, ${C.black})`,
-            borderRadius: '20px',
-            boxShadow: '0 25px 80px rgba(0,0,0,0.4)',
-            fontSize: '18px',
-            fontWeight: 900,
+            padding: '12px 16px',
+            background: C.black,
+            borderRadius: '8px',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.2)',
+            fontSize: '14px',
+            fontWeight: 600,
             color: C.white,
-            transform: 'rotate(3deg) scale(1.08)',
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
           }}>
             {activeTask.title}
           </div>
         ) : null}
       </DragOverlay>
-
-      <style>{`
-        @keyframes gradientMove {
-          0%, 100% { transform: scale(1) rotate(0deg); }
-          50% { transform: scale(1.1) rotate(5deg); }
-        }
-        @keyframes logoPulse {
-          0%, 100% { transform: scale(1) rotate(0deg); }
-          50% { transform: scale(1.05) rotate(3deg); }
-        }
-        @keyframes pulseRing {
-          0% { transform: scale(1); opacity: 0.5; }
-          100% { transform: scale(1.4); opacity: 0; }
-        }
-        @keyframes gradientShift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        @keyframes badgePulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        @keyframes bounceIn {
-          0% { transform: scale(0); }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1); }
-        }
-        @keyframes dropdownIn {
-          from { opacity: 0; transform: translateY(-12px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(40px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }
 
-function Column({ status, label, gradient, accent, tasks, onDelete, onUpdate, onCreate, editingId, setEditingId, hoveredTask, setHoveredTask, animIndex }: {
-  status: TaskStatus; label: string; gradient: string; accent: string; tasks: Task[];
+function Column({ status, label, tasks, onDelete, onUpdate, onCreate, editingId, setEditingId, hoveredTask, setHoveredTask }: {
+  status: TaskStatus; label: string; tasks: Task[];
   onDelete: (id: number) => void; onUpdate: (id: number, title: string) => void;
   onCreate: (title: string, status: TaskStatus) => void;
   editingId: number | null; setEditingId: (id: number | null) => void;
   hoveredTask: number | null; setHoveredTask: (id: number | null) => void;
-  animIndex: number;
 }) {
   const { setNodeRef } = useDroppable({ id: status, data: { status } });
   const taskIds = tasks.map(t => t.id.toString());
@@ -813,48 +644,28 @@ function Column({ status, label, gradient, accent, tasks, onDelete, onUpdate, on
   }, [isCreating, newTitle, onCreate, status]);
 
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        animation: `slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${animIndex * 0.15}s both`,
-      }}
-    >
-      {/* Column header - Refined */}
+    <div ref={setNodeRef} style={{ display: 'flex', flexDirection: 'column' }}>
+      {/* Column header */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '16px',
-        padding: '12px 16px',
-        background: gradient,
-        borderRadius: '12px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        marginBottom: '12px',
+        padding: '8px 4px',
       }}>
         <div style={{
-          fontSize: '12px',
+          fontSize: '11px',
           fontWeight: 700,
-          color: C.gray700,
+          color: C.gray500,
           letterSpacing: '0.1em',
           textTransform: 'uppercase',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
         }}>
-          <span style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            background: accent,
-          }} />
           {label}
         </div>
         <div style={{
-          fontSize: '20px',
-          fontWeight: 700,
-          color: C.gray600,
-          letterSpacing: '-0.02em',
+          fontSize: '14px',
+          fontWeight: 600,
+          color: C.gray500,
         }}>
           {tasks.length}
         </div>
@@ -866,11 +677,10 @@ function Column({ status, label, gradient, accent, tasks, onDelete, onUpdate, on
         flexDirection: 'column',
         gap: '8px',
         padding: '12px',
-        borderRadius: '16px',
+        borderRadius: '12px',
         background: C.white,
-        border: `1px solid ${C.gray200}`,
-        minHeight: '200px',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+        border: `1px solid ${C.gray100}`,
+        minHeight: '160px',
       }}>
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {tasks.map(task => (
@@ -887,27 +697,23 @@ function Column({ status, label, gradient, accent, tasks, onDelete, onUpdate, on
           ))}
         </SortableContext>
 
-        {/* Create new - DRAMATIC */}
+        {/* Create new task */}
         {isCreating ? (
           <div
             ref={inputRef}
             contentEditable
             suppressContentEditableWarning
             style={{
-              fontSize: '17px',
-              fontWeight: 800,
+              fontSize: '14px',
+              fontWeight: 500,
               color: C.black,
               outline: 'none',
-              padding: '18px 22px',
-              minHeight: '28px',
+              padding: '12px 14px',
+              minHeight: '22px',
               cursor: 'text',
               backgroundColor: C.white,
-              borderRadius: '16px',
-              border: `3px solid ${C.black}`,
-              boxShadow: '0 0 0 4px rgba(0,0,0,0.1), 0 8px 25px rgba(0,0,0,0.15)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              animation: 'bounceIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+              borderRadius: '8px',
+              border: `1px solid ${C.gray200}`,
             }}
             onInput={e => setNewTitle(e.currentTarget.textContent || "")}
           >{newTitle}</div>
@@ -915,37 +721,30 @@ function Column({ status, label, gradient, accent, tasks, onDelete, onUpdate, on
           <div
             onClick={() => setIsCreating(true)}
             style={{
-              fontSize: '16px',
-              fontWeight: 800,
-              color: C.gray500,
-              padding: '18px 22px',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: C.gray400,
+              padding: '12px 14px',
               cursor: 'text',
-              borderRadius: '16px',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              border: `3px dashed ${C.gray300}`,
+              gap: '8px',
+              border: `1px dashed ${C.gray200}`,
               background: 'transparent',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
             }}
             onMouseEnter={e => Object.assign(e.currentTarget.style, {
-              borderColor: accent,
-              color: accent,
-              background: `${accent}15`,
-              transform: 'scale(1.02)',
-              boxShadow: `0 8px 25px ${accent}30`,
+              borderColor: C.gray300,
+              color: C.gray600,
+              background: C.gray50,
             })}
             onMouseLeave={e => Object.assign(e.currentTarget.style, {
-              borderColor: C.gray300,
-              color: C.gray500,
+              borderColor: C.gray200,
+              color: C.gray400,
               background: 'transparent',
-              transform: 'scale(1)',
-              boxShadow: 'none',
             })}
           >
-            <PlusIcon style={{ width: '20px', height: '20px' }} />
+            <PlusIcon style={{ width: '16px', height: '16px' }} />
             Add task
           </div>
         )}
@@ -962,7 +761,6 @@ function TaskItem({ task, onDelete, onUpdate, isEditing, setEditingId, isHovered
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id.toString(), data: { status: task.status } });
   const [title, setTitle] = useState(task.title);
   const inputRef = useRef<HTMLDivElement>(null);
-  const [isPressed, setIsPressed] = useState(false);
 
   useEffect(() => {
     if (!isEditing) setTitle(task.title);
@@ -1012,60 +810,42 @@ function TaskItem({ task, onDelete, onUpdate, isEditing, setEditingId, isHovered
     };
   }, [isEditing, title, task.id, task.title, onUpdate, setEditingId]);
 
-  // Get status gradient
-  const getStatusGradient = () => {
-    switch (task.status) {
-      case "not_started": return `linear-gradient(135deg, ${C.indigo}, ${C.violet})`;
-      case "in_progress": return `linear-gradient(135deg, ${C.gray600}, ${C.gray800})`;
-      case "complete": return `linear-gradient(135deg, ${C.ocean}, ${C.sage})`;
-    }
-  };
-
-  const statusGradient = getStatusGradient();
-
   return (
     <div
       ref={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
-        opacity: isDragging ? 0.95 : 1,
+        opacity: isDragging ? 0.9 : 1,
       }}
       onMouseEnter={() => setHoveredTask(task.id)}
       onMouseLeave={() => setHoveredTask(null)}
-      onMouseDown={() => setIsPressed(true)}
-      onMouseUp={() => setIsPressed(false)}
     >
       <div
         {...(isEditing ? {} : attributes)}
         {...(isEditing ? {} : listeners)}
         style={{
-          padding: '12px 16px',
-          borderRadius: '10px',
+          padding: '12px 14px',
+          borderRadius: '8px',
           background: isHovered && !isEditing ? C.gray50 : C.white,
-          border: task.status === "in_progress" ? `2px solid ${C.gray400}` : `1px solid ${isHovered ? C.gray300 : C.gray200}`,
+          border: `1px solid ${isHovered ? C.gray200 : C.gray100}`,
           cursor: isEditing ? 'text' : 'grab',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: isPressed ? 'scale(0.98)' : isHovered ? 'scale(1.01)' : 'scale(1)',
           display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          boxShadow: isHovered ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+          alignItems: 'flex-start',
+          gap: '10px',
+          boxShadow: isHovered ? '0 2px 8px rgba(0,0,0,0.04)' : 'none',
         }}
         onClick={() => !isEditing && setEditingId(task.id)}
       >
-        {/* Status indicator - DRAMATIC */}
-        {task.status !== "not_started" && !isEditing && (
-          <div style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            background: statusGradient,
-            flexShrink: 0,
-            boxShadow: `0 0 16px ${task.status === "in_progress" ? C.gray500 : C.sage}60`,
-            animation: task.status === "in_progress" ? 'pulse 2s ease-in-out infinite' : 'none',
-          }} />
-        )}
+        {/* Status indicator */}
+        <div style={{
+          width: '6px',
+          height: '6px',
+          borderRadius: '50%',
+          background: task.status === "not_started" ? C.gray300 : task.status === "in_progress" ? C.black : C.gray200,
+          flexShrink: 0,
+          marginTop: '7px',
+        }} />
 
         {/* Text */}
         <div
@@ -1073,44 +853,46 @@ function TaskItem({ task, onDelete, onUpdate, isEditing, setEditingId, isHovered
           contentEditable={isEditing}
           suppressContentEditableWarning
           style={{
-            fontSize: '15px',
+            fontSize: '14px',
             fontWeight: 500,
-            color: task.status === "complete" ? C.gray400 : C.gray900,
+            color: task.status === "complete" ? C.gray400 : C.gray800,
             outline: 'none',
             cursor: isEditing ? 'text' : 'inherit',
             userSelect: isEditing ? 'text' : 'none',
             flex: 1,
             minHeight: '20px',
             wordBreak: 'break-word',
-            lineHeight: 1.4,
+            lineHeight: 1.5,
+            direction: 'ltr',
+            textAlign: 'left',
           }}
           onInput={e => setTitle(e.currentTarget.textContent || "")}
         >
           {title}
         </div>
 
-        {/* Delete - Refined */}
-        {(isHovered || isPressed) && !isEditing && (
+        {/* Delete */}
+        {isHovered && !isEditing && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
             style={{
-              width: '24px',
-              height: '24px',
+              width: '20px',
+              height: '20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: C.gray400,
               background: 'transparent',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: '4px',
               cursor: 'pointer',
-              fontSize: '18px',
+              fontSize: '16px',
               fontWeight: 500,
-              transition: 'all 0.15s ease',
+              flexShrink: 0,
             }}
             onMouseEnter={e => Object.assign(e.currentTarget.style, {
-              color: C.rose,
-              background: `${C.rose}10`,
+              color: C.black,
+              background: C.gray100,
             })}
             onMouseLeave={e => Object.assign(e.currentTarget.style, {
               color: C.gray400,
@@ -1130,9 +912,9 @@ function ListView({ tasks, tags, onDelete, onUpdate, onCreate, editingId, setEdi
   hoveredTask: number | null; setHoveredTask: (id: number | null) => void;
 }) {
   const grouped = [
-    { label: "BACKLOG", gradient: `linear-gradient(135deg, ${C.indigo}, ${C.violet})`, tasks: tasks.filter(t => t.status === "not_started") },
-    { label: "IN PROGRESS", gradient: `linear-gradient(135deg, ${C.coral}, ${C.rose})`, tasks: tasks.filter(t => t.status === "in_progress") },
-    { label: "DONE", gradient: `linear-gradient(135deg, ${C.ocean}, ${C.sage})`, tasks: tasks.filter(t => t.status === "complete") },
+    { label: "BACKLOG", tasks: tasks.filter(t => t.status === "not_started") },
+    { label: "IN PROGRESS", tasks: tasks.filter(t => t.status === "in_progress") },
+    { label: "DONE", tasks: tasks.filter(t => t.status === "complete") },
   ].filter(g => g.tasks.length > 0);
 
   const [isCreating, setIsCreating] = useState(false);
@@ -1176,51 +958,41 @@ function ListView({ tasks, tags, onDelete, onUpdate, onCreate, editingId, setEdi
   }, [isCreating, newTitle, onCreate]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-      {grouped.map((group, index) => (
-        <div key={group.label} style={{
-          animation: `slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${index * 0.1}s both`,
-        }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      {grouped.map((group) => (
+        <div key={group.label}>
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '16px',
-            padding: '16px 20px',
-            background: group.gradient,
-            borderRadius: '20px',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-            border: '3px solid rgba(0,0,0,0.1)',
+            marginBottom: '12px',
+            padding: '8px 4px',
           }}>
             <span style={{
-              fontSize: '14px',
-              fontWeight: 900,
-              color: C.white,
-              letterSpacing: '0.2em',
+              fontSize: '11px',
+              fontWeight: 700,
+              color: C.gray500,
+              letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
             }}>{group.label}</span>
             <span style={{
-              fontSize: '24px',
-              fontWeight: 900,
-              color: C.white,
-              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: C.gray500,
             }}>{group.tasks.length}</span>
           </div>
           <div style={{
-            background: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '20px',
+            background: C.white,
+            borderRadius: '12px',
             overflow: 'hidden',
-            border: '3px solid rgba(0,0,0,0.1)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+            border: `1px solid ${C.gray100}`,
           }}>
             {group.tasks.map(task => (
               <div
                 key={task.id}
                 style={{
-                  padding: '18px 22px',
-                  borderBottom: `2px solid ${C.gray100}`,
+                  padding: '12px 16px',
+                  borderBottom: `1px solid ${C.gray100}`,
                   display: 'flex',
                   alignItems: 'center',
                 }}
@@ -1241,6 +1013,6 @@ function ListView({ tasks, tags, onDelete, onUpdate, onCreate, editingId, setEdi
           </div>
         </div>
       ))}
-      </div>
+    </div>
   );
 }
