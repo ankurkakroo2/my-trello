@@ -29,50 +29,43 @@ import {
   SparklesIcon,
 } from "@heroicons/react/24/solid";
 
-// BOLD DRAMATIC PALETTE
+// REFINED PALETTE - Premium sophisticated aesthetic
 const C = {
-  // Neutrals
-  white: "#ffffff",
-  offwhite: "#fafafa",
-  light: "#f8f9fa",
+  // Neutrals - Warm, sophisticated grays
+  white: "#FFFFFF",
+  offwhite: "#FAFAF9",
+  cream: "#FFFBF7",
+  ivory: "#FFFFF0",
 
-  // Greys - full spectrum
-  gray50: "#f9fafb",
-  gray100: "#f3f4f6",
-  gray200: "#e5e7eb",
-  gray300: "#d1d5db",
-  gray400: "#9ca3af",
-  gray500: "#6b7280",
-  gray600: "#4b5563",
-  gray700: "#374151",
-  gray800: "#1f2937",
-  gray900: "#111827",
-  black: "#000000",
+  // Greys - Warm tonal spectrum
+  gray50: "#FAFAF9",
+  gray100: "#F5F5F4",
+  gray200: "#E7E5E4",
+  gray300: "#D6D3D1",
+  gray400: "#A8A29E",
+  gray500: "#78716C",
+  gray600: "#57534E",
+  gray700: "#44403C",
+  gray800: "#292524",
+  gray900: "#1C1917",
+  black: "#0C0A09",
 
-  // Bold accent colors
-  purple: "#8b5cf6",
-  pink: "#ec4899",
-  red: "#ef4444",
-  orange: "#f97316",
-  amber: "#f59e0b",
-  yellow: "#eab308",
-  lime: "#84cc16",
-  green: "#22c55e",
-  emerald: "#10b981",
-  teal: "#14b8a6",
-  cyan: "#06b6d4",
-  sky: "#0ea5e9",
-  blue: "#3b82f6",
-  indigo: "#6366f1",
-  violet: "#8b5cf6",
-  fuchsia: "#d946ef",
-  rose: "#f43f5e",
+  // Premium accent palette - Sophisticated, not oversaturated
+  sage: "#84CC16",
+  teal: "#0D9488",
+  ocean: "#0EA5E9",
+  indigo: "#6366F1",
+  violet: "#8B5CF6",
+  magenta: "#D946EF",
+  rose: "#E11D48",
+  coral: "#F97316",
+  amber: "#F59E0B",
 };
 
 const STATUSES: { value: TaskStatus; label: string; gradient: string; accent: string }[] = [
-  { value: "not_started", label: "BACKLOG", gradient: "linear-gradient(135deg, #374151 0%, #1f2937 100%)", accent: C.indigo },
-  { value: "in_progress", label: "IN PROGRESS", gradient: "linear-gradient(135deg, #4b5563 0%, #374151 100%)", accent: C.orange },
-  { value: "complete", label: "DONE", gradient: "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)", accent: C.green },
+  { value: "not_started", label: "BACKLOG", gradient: "linear-gradient(135deg, #E7E5E4 0%, #D6D3D1 100%)", accent: C.indigo },
+  { value: "in_progress", label: "IN PROGRESS", gradient: "linear-gradient(135deg, #78716C 0%, #57534E 100%)", accent: C.coral },
+  { value: "complete", label: "DONE", gradient: "linear-gradient(135deg, #D6D3D1 0%, #A8A29E 100%)", accent: C.ocean },
 ];
 
 export default function Board() {
@@ -198,106 +191,52 @@ export default function Board() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: `linear-gradient(135deg, ${C.white} 0%, ${C.offwhite} 50%, ${C.light} 100%)`,
+        background: C.offwhite,
         fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
-        position: 'relative',
-        overflow: 'hidden',
       }}>
-        {/* Animated background circles */}
-        <div style={{
-          position: 'absolute',
-          width: '600px',
-          height: '600px',
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${C.purple}20 0%, transparent 70%)`,
-          animation: 'float 8s ease-in-out infinite',
-        }} />
-        <div style={{
-          position: 'absolute',
-          width: '500px',
-          height: '500px',
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${C.pink}20 0%, transparent 70%)`,
-          animation: 'float 10s ease-in-out infinite reverse',
-        }} />
-        <div style={{
-          position: 'absolute',
-          width: '400px',
-          height: '400px',
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${C.blue}20 0%, transparent 70%)`,
-          animation: 'float 12s ease-in-out infinite',
-        }} />
-
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '48px',
-          position: 'relative',
-          zIndex: 1,
+          gap: '24px',
         }}>
-          {/* Dramatic loading animation */}
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-            {[0, 1, 2, 3, 4].map((i) => {
-              const color = [C.purple, C.pink, C.red, C.orange, C.amber][i];
+          {/* Simple, elegant loading animation */}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {[0, 1, 2].map((i) => {
               return (
                 <div key={i} style={{
-                  width: '16px',
-                  background: `linear-gradient(180deg, ${color} 0%, ${[C.indigo, C.rose, C.pink, C.red, C.orange][i]} 100%)`,
-                  borderRadius: '8px',
+                  width: '8px',
+                  background: C.indigo,
+                  borderRadius: '4px',
                   animation: `bounce ${0.6 + i * 0.1}s ease-in-out infinite`,
-                  boxShadow: `0 8px 32px ${color}66`,
-                  height: '20px',
+                  height: '24px',
                 }} />
               );
             })}
           </div>
 
           <h1 style={{
-            fontSize: '72px',
-            fontWeight: 900,
-            background: `linear-gradient(135deg, ${C.black} 0%, ${C.gray800} 25%, ${C.purple} 50%, ${C.pink} 75%, ${C.black} 100%)`,
-            backgroundSize: '200% 200%',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            letterSpacing: '-0.08em',
-            textTransform: 'uppercase',
-            animation: 'gradientShift 3s ease infinite',
+            fontSize: '28px',
+            fontWeight: 600,
+            color: C.gray900,
+            letterSpacing: '-0.03em',
           }}>
             TicTac
           </h1>
 
           <p style={{
-            fontSize: '18px',
-            fontWeight: 700,
-            color: C.gray600,
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            animation: 'pulse 2s ease-in-out infinite',
+            fontSize: '15px',
+            fontWeight: 500,
+            color: C.gray500,
           }}>
             Loading your workspace
           </p>
         </div>
 
         <style>{`
-          @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -30px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-          }
           @keyframes bounce {
-            0%, 100% { height: 20px; }
-            50% { height: 80px; }
-          }
-          @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-          }
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.5); }
           }
         `}</style>
       </div>
@@ -316,7 +255,7 @@ export default function Board() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: `linear-gradient(135deg, ${C.white} 0%, ${C.offwhite} 50%, ${C.light} 100%)`,
+      background: C.offwhite,
       fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
       opacity: mounted ? 1 : 0,
       transition: 'opacity 0.5s ease',
@@ -347,128 +286,103 @@ export default function Board() {
         zIndex: 0,
       }} />
 
-      {/* HEADER - MASSIVE AND DRAMATIC */}
+      {/* HEADER - Refined & Elegant */}
       <header style={{
         position: 'relative',
         zIndex: 10,
-        padding: '56px 72px',
-        background: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(30px)',
-        borderBottom: `6px solid ${C.black}`,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+        padding: '32px 48px',
+        background: 'rgba(255, 255, 255, 0.92)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: `1px solid ${C.gray200}`,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          maxWidth: '2000px',
+          maxWidth: '1600px',
           margin: '0 auto',
         }}>
-          {/* Logo - DRAMATIC */}
+          {/* Logo - Elegant & Clean */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '36px',
+            gap: '20px',
           }}>
             <div style={{
-              width: '152px',
-              height: '152px',
-              background: `linear-gradient(135deg, ${C.blue} 0%, ${C.indigo} 25%, ${C.violet} 50%, ${C.purple} 75%, ${C.pink} 100%)`,
-              borderRadius: '40px',
+              width: '56px',
+              height: '56px',
+              background: `linear-gradient(135deg, ${C.indigo} 0%, ${C.violet} 100%)`,
+              borderRadius: '16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: `0 35px 100px ${C.purple}80`,
-              animation: 'logoPulse 0.8s ease-in-out infinite',
-              position: 'relative',
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.15)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}>
-              <div style={{
-                position: 'absolute',
-                inset: -12,
-                borderRadius: '44px',
-                background: `linear-gradient(135deg, ${C.blue}, ${C.indigo}, ${C.violet}, ${C.purple}, ${C.pink}, ${C.rose})`,
-                opacity: 0.7,
-                animation: 'pulseRing 0.6s ease-out infinite',
-              }} />
-              <SparklesIcon style={{ width: '80px', height: '80px', color: C.white, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))' }} />
+              <SparklesIcon style={{ width: '28px', height: '28px', color: C.white }} />
             </div>
 
             <div>
               <h1 style={{
-                fontSize: '132px',
-                fontWeight: 900,
-                background: `linear-gradient(90deg, ${C.black} 0%, ${C.blue} 15%, ${C.indigo} 30%, ${C.violet} 45%, ${C.purple} 60%, ${C.pink} 75%, ${C.rose} 90%, ${C.black} 100%)`,
-                backgroundSize: '600% 100%',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                letterSpacing: '-0.16em',
-                lineHeight: 0.8,
-                textTransform: 'uppercase',
-                animation: 'gradientShift 1s ease infinite',
-                filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.6))',
+                fontSize: '28px',
+                fontWeight: 700,
+                color: C.gray900,
+                letterSpacing: '-0.03em',
+                lineHeight: 1.2,
               }}>
                 TicTac
               </h1>
 
               <div style={{
                 display: 'flex',
-                gap: '18px',
-                marginTop: '24px',
+                gap: '8px',
+                marginTop: '8px',
                 flexWrap: 'wrap',
               }}>
-                {/* Stats badges */}
+                {/* Stats badges - Refined */}
                 <div style={{
-                  padding: '16px 32px',
-                  background: `linear-gradient(135deg, ${C.blue}, ${C.indigo}, ${C.violet}, ${C.purple})`,
-                  borderRadius: '50px',
-                  fontSize: '24px',
-                  fontWeight: 900,
-                  color: C.white,
-                  letterSpacing: '0.22em',
-                  textTransform: 'uppercase',
-                  border: `6px solid ${C.purple}`,
-                  transition: 'all 0.3s ease',
-                  boxShadow: `0 12px 40px ${C.purple}80`,
-                  animation: 'badgePulse 1s ease-in-out infinite',
+                  padding: '4px 12px',
+                  background: C.gray100,
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: C.gray700,
+                  letterSpacing: '0.02em',
+                  border: `1px solid ${C.gray200}`,
                 }}>
                   {totalTasks} Tasks
                 </div>
 
                 {taskCounts.in_progress > 0 && (
                   <div style={{
-                    padding: '16px 32px',
-                    background: `linear-gradient(135deg, ${C.orange}, ${C.red}, ${C.rose}, ${C.pink})`,
-                    borderRadius: '50px',
-                    fontSize: '24px',
-                    fontWeight: 900,
-                    color: C.white,
-                    letterSpacing: '0.22em',
-                    textTransform: 'uppercase',
-                    boxShadow: `0 12px 40px ${C.red}80`,
-                    animation: 'badgePulse 0.8s ease-in-out infinite',
+                    padding: '4px 12px',
+                    background: `${C.coral}10`,
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: C.coral,
+                    letterSpacing: '0.02em',
+                    border: `1px solid ${C.coral}20`,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '14px',
-                    border: `6px solid ${C.pink}`,
+                    gap: '4px',
                   }}>
-                    <FireIcon style={{ width: '26px', height: '26px' }} />
+                    <FireIcon style={{ width: '12px', height: '12px' }} />
                     {taskCounts.in_progress} Active
                   </div>
                 )}
 
                 {completionRate > 0 && (
                   <div style={{
-                    padding: '14px 28px',
-                    background: `linear-gradient(135deg, ${C.emerald}, ${C.teal}, ${C.cyan}, ${C.sky})`,
-                    borderRadius: '50px',
-                    fontSize: '22px',
-                    fontWeight: 900,
-                    color: C.white,
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    boxShadow: `0 10px 35px ${C.teal}70`,
-                    border: `5px solid ${C.sky}`,
+                    padding: '4px 12px',
+                    background: `${C.ocean}10`,
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: C.ocean,
+                    letterSpacing: '0.02em',
+                    border: `1px solid ${C.ocean}20`,
                   }}>
                     {completionRate}% Complete
                   </div>
@@ -594,7 +508,7 @@ export default function Board() {
                 e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
                 e.currentTarget.style.boxShadow = view === "board"
                   ? `0 12px 35px ${C.indigo}40`
-                  : `0 12px 35px ${C.purple}40`;
+                  : `0 12px 35px ${C.violet}40`;
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.transform = 'translateY(0) scale(1)';
@@ -907,45 +821,40 @@ function Column({ status, label, gradient, accent, tasks, onDelete, onUpdate, on
         animation: `slideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${animIndex * 0.15}s both`,
       }}
     >
-      {/* Column header - DRAMATIC */}
+      {/* Column header - Refined */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '32px',
-        padding: '28px 32px',
+        marginBottom: '16px',
+        padding: '12px 16px',
         background: gradient,
-        borderRadius: '32px',
-        boxShadow: '0 18px 60px rgba(0,0,0,0.3)',
-        border: '6px solid rgba(0,0,0,0.25)',
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
       }}>
         <div style={{
-          fontSize: '20px',
-          fontWeight: 900,
-          color: C.white,
-          letterSpacing: '0.35em',
+          fontSize: '12px',
+          fontWeight: 700,
+          color: C.gray700,
+          letterSpacing: '0.1em',
           textTransform: 'uppercase',
           display: 'flex',
           alignItems: 'center',
-          gap: '16px',
-          textShadow: '0 5px 10px rgba(0,0,0,0.6)',
+          gap: '8px',
         }}>
           <span style={{
-            width: '18px',
-            height: '18px',
+            width: '6px',
+            height: '6px',
             borderRadius: '50%',
             background: accent,
-            boxShadow: `0 0 30px ${accent}`,
-            animation: 'pulse 1s ease-in-out infinite',
           }} />
           {label}
         </div>
         <div style={{
-          fontSize: '52px',
-          fontWeight: 900,
-          color: C.white,
-          textShadow: '0 5px 10px rgba(0,0,0,0.6)',
-          letterSpacing: '-0.04em',
+          fontSize: '20px',
+          fontWeight: 700,
+          color: C.gray600,
+          letterSpacing: '-0.02em',
         }}>
           {tasks.length}
         </div>
@@ -955,14 +864,13 @@ function Column({ status, label, gradient, accent, tasks, onDelete, onUpdate, on
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px',
-        padding: '32px',
-        borderRadius: '36px',
-        background: 'rgba(255, 255, 255, 0.98)',
-        backdropFilter: 'blur(25px)',
-        border: '6px solid rgba(0,0,0,0.18)',
-        minHeight: '480px',
-        boxShadow: '0 18px 60px rgba(0,0,0,0.18)',
+        gap: '8px',
+        padding: '12px',
+        borderRadius: '16px',
+        background: C.white,
+        border: `1px solid ${C.gray200}`,
+        minHeight: '200px',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
       }}>
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {tasks.map(task => (
@@ -1107,9 +1015,9 @@ function TaskItem({ task, onDelete, onUpdate, isEditing, setEditingId, isHovered
   // Get status gradient
   const getStatusGradient = () => {
     switch (task.status) {
-      case "not_started": return `linear-gradient(135deg, ${C.indigo}, ${C.purple})`;
+      case "not_started": return `linear-gradient(135deg, ${C.indigo}, ${C.violet})`;
       case "in_progress": return `linear-gradient(135deg, ${C.gray600}, ${C.gray800})`;
-      case "complete": return `linear-gradient(135deg, ${C.teal}, ${C.green})`;
+      case "complete": return `linear-gradient(135deg, ${C.ocean}, ${C.sage})`;
     }
   };
 
@@ -1132,17 +1040,17 @@ function TaskItem({ task, onDelete, onUpdate, isEditing, setEditingId, isHovered
         {...(isEditing ? {} : attributes)}
         {...(isEditing ? {} : listeners)}
         style={{
-          padding: '30px 36px',
-          borderRadius: '28px',
-          background: isHovered && !isEditing ? C.gray100 : C.white,
-          border: task.status === "in_progress" ? `6px solid ${C.gray700}` : `6px solid ${isHovered ? (task.status === "complete" ? C.teal : C.indigo) : C.gray200}`,
+          padding: '12px 16px',
+          borderRadius: '10px',
+          background: isHovered && !isEditing ? C.gray50 : C.white,
+          border: task.status === "in_progress" ? `2px solid ${C.gray400}` : `1px solid ${isHovered ? C.gray300 : C.gray200}`,
           cursor: isEditing ? 'text' : 'grab',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: isPressed ? 'scale(0.96)' : isHovered ? 'scale(1.05)' : 'scale(1)',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: isPressed ? 'scale(0.98)' : isHovered ? 'scale(1.01)' : 'scale(1)',
           display: 'flex',
           alignItems: 'center',
-          gap: '20px',
-          boxShadow: isHovered && task.status === "in_progress" ? '0 18px 60px rgba(0,0,0,0.3)' : (isHovered ? `0 18px 60px ${task.status === "complete" ? C.teal : C.indigo}50` : '0 5px 18px rgba(0,0,0,0.12)'),
+          gap: '12px',
+          boxShadow: isHovered ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
         }}
         onClick={() => !isEditing && setEditingId(task.id)}
       >
@@ -1154,7 +1062,7 @@ function TaskItem({ task, onDelete, onUpdate, isEditing, setEditingId, isHovered
             borderRadius: '50%',
             background: statusGradient,
             flexShrink: 0,
-            boxShadow: `0 0 16px ${task.status === "in_progress" ? C.gray500 : C.green}60`,
+            boxShadow: `0 0 16px ${task.status === "in_progress" ? C.gray500 : C.sage}60`,
             animation: task.status === "in_progress" ? 'pulse 2s ease-in-out infinite' : 'none',
           }} />
         )}
@@ -1165,56 +1073,48 @@ function TaskItem({ task, onDelete, onUpdate, isEditing, setEditingId, isHovered
           contentEditable={isEditing}
           suppressContentEditableWarning
           style={{
-            fontSize: '24px',
-            fontWeight: 900,
-            color: task.status === "complete" ? C.gray500 : C.black,
+            fontSize: '15px',
+            fontWeight: 500,
+            color: task.status === "complete" ? C.gray400 : C.gray900,
             outline: 'none',
             cursor: isEditing ? 'text' : 'inherit',
             userSelect: isEditing ? 'text' : 'none',
             flex: 1,
-            minHeight: '40px',
+            minHeight: '20px',
             wordBreak: 'break-word',
-            letterSpacing: '0.05em',
-            textTransform: isEditing ? 'uppercase' : 'none',
-            lineHeight: 1.2,
+            lineHeight: 1.4,
           }}
           onInput={e => setTitle(e.currentTarget.textContent || "")}
         >
           {title}
         </div>
 
-        {/* Delete - DRAMATIC */}
+        {/* Delete - Refined */}
         {(isHovered || isPressed) && !isEditing && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
             style={{
-              width: '50px',
-              height: '50px',
+              width: '24px',
+              height: '24px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: C.gray400,
-              background: C.gray100,
-              border: '5px solid C.gray300',
-              borderRadius: '16px',
+              background: 'transparent',
+              border: 'none',
+              borderRadius: '6px',
               cursor: 'pointer',
-              fontSize: '32px',
-              fontWeight: 900,
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              fontSize: '18px',
+              fontWeight: 500,
+              transition: 'all 0.15s ease',
             }}
             onMouseEnter={e => Object.assign(e.currentTarget.style, {
-              color: C.white,
-              background: `linear-gradient(135deg, ${C.red}, ${C.rose}, ${C.pink}, ${C.fuchsia})`,
-              borderColor: C.red,
-              transform: 'scale(1.25) rotate(90deg)',
-              boxShadow: `0 10px 30px ${C.red}70`,
+              color: C.rose,
+              background: `${C.rose}10`,
             })}
             onMouseLeave={e => Object.assign(e.currentTarget.style, {
               color: C.gray400,
-              background: C.gray100,
-              borderColor: C.gray300,
-              transform: 'scale(1) rotate(0deg)',
-              boxShadow: 'none',
+              background: 'transparent',
             })}
           >×</button>
         )}
@@ -1230,9 +1130,9 @@ function ListView({ tasks, tags, onDelete, onUpdate, onCreate, editingId, setEdi
   hoveredTask: number | null; setHoveredTask: (id: number | null) => void;
 }) {
   const grouped = [
-    { label: "BACKLOG", gradient: `linear-gradient(135deg, ${C.indigo}, ${C.purple})`, tasks: tasks.filter(t => t.status === "not_started") },
-    { label: "IN PROGRESS", gradient: `linear-gradient(135deg, ${C.orange}, ${C.red})`, tasks: tasks.filter(t => t.status === "in_progress") },
-    { label: "DONE", gradient: `linear-gradient(135deg, ${C.teal}, ${C.green})`, tasks: tasks.filter(t => t.status === "complete") },
+    { label: "BACKLOG", gradient: `linear-gradient(135deg, ${C.indigo}, ${C.violet})`, tasks: tasks.filter(t => t.status === "not_started") },
+    { label: "IN PROGRESS", gradient: `linear-gradient(135deg, ${C.coral}, ${C.rose})`, tasks: tasks.filter(t => t.status === "in_progress") },
+    { label: "DONE", gradient: `linear-gradient(135deg, ${C.ocean}, ${C.sage})`, tasks: tasks.filter(t => t.status === "complete") },
   ].filter(g => g.tasks.length > 0);
 
   const [isCreating, setIsCreating] = useState(false);

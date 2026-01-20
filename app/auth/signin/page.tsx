@@ -5,44 +5,27 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-// BOLD DRAMATIC PALETTE
+// REFINED PALETTE
 const C = {
-  // Neutrals
-  white: "#ffffff",
-  offwhite: "#fafafa",
-  light: "#f8f9fa",
+  white: "#FFFFFF",
+  offwhite: "#FAFAF9",
+  cream: "#FFFBF7",
 
-  // Greys - full spectrum
-  gray50: "#f9fafb",
-  gray100: "#f3f4f6",
-  gray200: "#e5e7eb",
-  gray300: "#d1d5db",
-  gray400: "#9ca3af",
-  gray500: "#6b7280",
-  gray600: "#4b5563",
-  gray700: "#374151",
-  gray800: "#1f2937",
-  gray900: "#111827",
-  black: "#000000",
+  gray50: "#FAFAF9",
+  gray100: "#F5F5F4",
+  gray200: "#E7E5E4",
+  gray300: "#D6D3D1",
+  gray400: "#A8A29E",
+  gray500: "#78716C",
+  gray600: "#57534E",
+  gray700: "#44403C",
+  gray800: "#292524",
+  gray900: "#1C1917",
+  black: "#0C0A09",
 
-  // Bold accent colors
-  purple: "#8b5cf6",
-  pink: "#ec4899",
-  red: "#ef4444",
-  orange: "#f97316",
-  amber: "#f59e0b",
-  yellow: "#eab308",
-  lime: "#84cc16",
-  green: "#22c55e",
-  emerald: "#10b981",
-  teal: "#14b8a6",
-  cyan: "#06b6d4",
-  sky: "#0ea5e9",
-  blue: "#3b82f6",
-  indigo: "#6366f1",
-  violet: "#8b5cf6",
-  fuchsia: "#d946ef",
-  rose: "#f43f5e",
+  indigo: "#6366F1",
+  violet: "#8B5CF6",
+  rose: "#E11D48",
 };
 
 export default function SignInPage() {
@@ -79,66 +62,13 @@ export default function SignInPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: `linear-gradient(135deg, ${C.white} 0%, ${C.offwhite} 50%, ${C.light} 100%)`,
+      background: C.offwhite,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '24px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif',
-      position: 'relative',
-      overflow: 'hidden',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
     }}>
-      {/* Dramatic animated background */}
-      <div style={{
-        position: 'absolute',
-        width: '700px',
-        height: '700px',
-        borderRadius: '50%',
-        background: `radial-gradient(circle, ${C.gray200}20 0%, transparent 70%)`,
-        animation: 'float1 14s ease-in-out infinite',
-      }} />
-      <div style={{
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        width: '600px',
-        height: '600px',
-        borderRadius: '50%',
-        background: `radial-gradient(circle, ${C.gray300}20 0%, transparent 70%)`,
-        animation: 'float2 18s ease-in-out infinite reverse',
-      }} />
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '100%',
-        height: '100%',
-        background: 'repeating-linear-gradient(0deg, transparent, transparent 50px, rgba(0,0,0,0.02) 50px, rgba(0,0,0,0.02) 51px)',
-        pointerEvents: 'none',
-      }} />
-
-      {/* Floating gradient orbs */}
-      <div style={{
-        position: 'absolute',
-        top: '10%',
-        left: '10%',
-        width: '300px',
-        height: '300px',
-        borderRadius: '50%',
-        background: `radial-gradient(circle, ${C.blue}10 0%, transparent 70%)`,
-        animation: 'float3 12s ease-in-out infinite',
-      }} />
-      <div style={{
-        position: 'absolute',
-        bottom: '15%',
-        left: '20%',
-        width: '250px',
-        height: '250px',
-        borderRadius: '50%',
-        background: `radial-gradient(circle, ${C.indigo}10 0%, transparent 70%)`,
-        animation: 'float3 16s ease-in-out infinite reverse',
-      }} />
 
       <div style={{
         width: '100%',
@@ -178,59 +108,37 @@ export default function SignInPage() {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '100px',
-              height: '100px',
-              background: `linear-gradient(135deg, ${C.gray800}, ${C.black})`,
-              borderRadius: '30px',
-              marginBottom: '24px',
-              boxShadow: '0 15px 50px rgba(0,0,0,0.3)',
-              animation: 'logoFloat 4s ease-in-out infinite',
-              position: 'relative',
+              width: '48px',
+              height: '48px',
+              background: `linear-gradient(135deg, ${C.indigo} 0%, ${C.violet} 100%)`,
+              borderRadius: '14px',
+              marginBottom: '20px',
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
             }}>
-              <div style={{
-                position: 'absolute',
-                inset: -6,
-                borderRadius: '36px',
-                background: `linear-gradient(135deg, ${C.gray700}, ${C.black})`,
-                opacity: 0.3,
-                animation: 'pulseRing 2.5s ease-out infinite',
-              }} />
               <span style={{
-                fontSize: '48px',
-                fontWeight: 900,
+                fontSize: '24px',
+                fontWeight: 600,
                 color: C.white,
-                textShadow: '0 2px 8px rgba(0,0,0,0.3)',
               }}>✨</span>
             </div>
 
             <h1 style={{
-              fontSize: '120px',
-              fontWeight: 900,
-              background: `linear-gradient(90deg, ${C.black} 0%, ${C.blue} 12%, ${C.indigo} 25%, ${C.violet} 37%, ${C.purple} 50%, ${C.pink} 62%, ${C.rose} 75%, ${C.black} 87%, ${C.black} 100%)`,
-              backgroundSize: '600% 100%',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              letterSpacing: '-0.12em',
-              lineHeight: 0.85,
-              marginBottom: '28px',
-              textTransform: 'uppercase',
-              animation: 'gradientShift 1.2s ease infinite',
-              filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.5))',
+              fontSize: '36px',
+              fontWeight: 600,
+              color: C.gray900,
+              letterSpacing: '-0.04em',
+              lineHeight: 1.1,
+              marginBottom: '8px',
             }}>
               TicTac
             </h1>
             <p style={{
-              fontSize: '20px',
-              background: `linear-gradient(135deg, ${C.gray800}, ${C.gray600})`,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              fontWeight: 800,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
+              fontSize: '15px',
+              color: C.gray500,
+              fontWeight: 500,
+              letterSpacing: '0.02em',
             }}>
-              Sign In
+              Sign in to your account
             </p>
           </div>
 
@@ -241,14 +149,13 @@ export default function SignInPage() {
               <label htmlFor="email" style={{
                 display: 'block',
                 fontSize: '13px',
-                fontWeight: 900,
-                marginBottom: '12px',
-                color: C.gray700,
+                fontWeight: 500,
+                marginBottom: '6px',
+                color: C.gray600,
                 textAlign: 'left',
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
+                letterSpacing: '0.02em',
               }}>
-                Email Address
+                Email
               </label>
               <input
                 id="email"
@@ -257,31 +164,27 @@ export default function SignInPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '22px 28px',
-                  backgroundColor: C.gray50,
-                  border: `3px solid ${C.gray300}`,
-                  borderRadius: '20px',
-                  fontSize: '18px',
-                  fontWeight: 700,
-                  color: C.black,
+                  padding: '10px 14px',
+                  backgroundColor: C.white,
+                  border: `1px solid ${C.gray300}`,
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: 400,
+                  color: C.gray900,
                   outline: 'none',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  letterSpacing: '0.02em',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s ease',
+                  letterSpacing: '0.01em',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                 }}
                 placeholder="you@example.com"
                 required
                 onFocus={(e) => Object.assign(e.currentTarget.style, {
-                  borderColor: C.black,
-                  backgroundColor: C.white,
-                  boxShadow: '0 0 0 5px rgba(0,0,0,0.1), 0 10px 40px rgba(0,0,0,0.15)',
-                  transform: 'scale(1.02)',
+                  borderColor: C.indigo,
+                  boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.1)',
                 })}
                 onBlur={(e) => Object.assign(e.currentTarget.style, {
                   borderColor: C.gray300,
-                  backgroundColor: C.gray50,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                  transform: 'scale(1)',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                 })}
               />
             </div>
@@ -291,12 +194,11 @@ export default function SignInPage() {
               <label htmlFor="password" style={{
                 display: 'block',
                 fontSize: '13px',
-                fontWeight: 900,
-                marginBottom: '12px',
-                color: C.gray700,
+                fontWeight: 500,
+                marginBottom: '6px',
+                color: C.gray600,
                 textAlign: 'left',
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
+                letterSpacing: '0.02em',
               }}>
                 Password
               </label>
@@ -307,73 +209,66 @@ export default function SignInPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '22px 28px',
-                  backgroundColor: C.gray50,
-                  border: `3px solid ${C.gray300}`,
-                  borderRadius: '20px',
-                  fontSize: '18px',
-                  fontWeight: 700,
-                  color: C.black,
+                  padding: '10px 14px',
+                  backgroundColor: C.white,
+                  border: `1px solid ${C.gray300}`,
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: 400,
+                  color: C.gray900,
                   outline: 'none',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  letterSpacing: '0.02em',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s ease',
+                  letterSpacing: '0.01em',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                 }}
                 placeholder="•••••••••"
                 required
                 minLength={6}
                 onFocus={(e) => Object.assign(e.currentTarget.style, {
-                  borderColor: C.black,
-                  backgroundColor: C.white,
-                  boxShadow: '0 0 0 5px rgba(0,0,0,0.1), 0 10px 40px rgba(0,0,0,0.15)',
-                  transform: 'scale(1.02)',
+                  borderColor: C.indigo,
+                  boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.1)',
                 })}
                 onBlur={(e) => Object.assign(e.currentTarget.style, {
                   borderColor: C.gray300,
-                  backgroundColor: C.gray50,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                  transform: 'scale(1)',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                 })}
               />
             </div>
 
-            {/* Submit - MASSIVE BUTTON */}
+            {/* Submit - Refined button */}
             <button
               type="submit"
               disabled={isLoading}
               style={{
                 width: '100%',
-                padding: '26px',
-                background: `linear-gradient(135deg, ${C.black}, ${C.gray900})`,
+                padding: '12px 20px',
+                background: C.gray900,
                 color: C.white,
-                fontWeight: 900,
-                fontSize: '18px',
+                fontWeight: 500,
+                fontSize: '15px',
                 border: 'none',
-                borderRadius: '20px',
+                borderRadius: '8px',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 opacity: isLoading ? 0.6 : 1,
-                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                marginTop: '16px',
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                boxShadow: '0 12px 50px rgba(0,0,0,0.25)',
-                position: 'relative',
-                overflow: 'hidden',
+                transition: 'all 0.2s ease',
+                marginTop: '8px',
+                letterSpacing: '0.02em',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
               }}
               onMouseEnter={(e) => {
                 if (!isLoading) {
-                  e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
-                  e.currentTarget.style.background = `linear-gradient(135deg, ${C.indigo}, ${C.purple})`;
-                  e.currentTarget.style.boxShadow = `0 20px 70px ${C.purple}50`;
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.background = C.black;
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.background = `linear-gradient(135deg, ${C.black}, ${C.gray900})`;
-                e.currentTarget.style.boxShadow = '0 12px 50px rgba(0,0,0,0.25)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.background = C.gray900;
+                e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.08)';
               }}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
